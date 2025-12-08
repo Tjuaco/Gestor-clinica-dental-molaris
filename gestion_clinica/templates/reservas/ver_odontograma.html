@@ -1,0 +1,356 @@
+{% extends 'reservas/base_cliente.html' %}
+{% load static %}
+
+{% block title %}Ficha Odontológica - Clínica San Felipe{% endblock %}
+
+{% block header_icon %}<i class="fas fa-file-medical"></i>{% endblock %}
+{% block header_title %}Ficha Odontológica{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .ficha-header {
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .ficha-title {
+            color: #1e293b;
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .ficha-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        .ficha-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .ficha-meta i {
+            color: #14b8a6;
+        }
+
+        .ficha-section {
+            margin-bottom: 16px;
+        }
+
+        .ficha-section h3 {
+            color: #1e293b;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+        }
+
+        .ficha-section h3 i {
+            color: #14b8a6;
+            font-size: 0.875rem;
+        }
+
+        .ficha-content {
+            background: #f8fafc;
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: #475569;
+            line-height: 1.5;
+            font-size: 0.875rem;
+            border-left: 3px solid #14b8a6;
+        }
+
+        .ficha-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .info-item {
+            background: #f8fafc;
+            border-radius: 6px;
+            padding: 10px 12px;
+            border-left: 3px solid #14b8a6;
+        }
+
+        .info-label {
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            color: #1e293b;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .info-value.empty {
+            color: #94a3b8;
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .ficha-content.empty-content {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .compact-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .compact-section {
+            background: #f8fafc;
+            border-radius: 6px;
+            padding: 10px 12px;
+            border-left: 3px solid #14b8a6;
+        }
+
+        .compact-section-label {
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .compact-section-value {
+            color: #1e293b;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .pdf-info-box {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 16px;
+            border: 2px solid #14b8a6;
+        }
+
+        .pdf-info-content {
+            text-align: center;
+            color: #0f766e;
+        }
+
+        .pdf-info-icon {
+            font-size: 2rem;
+            color: #14b8a6;
+            margin-bottom: 10px;
+        }
+
+        .pdf-info-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #0f766e;
+        }
+
+        .pdf-info-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            color: #475569;
+        }
+
+        .pdf-contact-box {
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            border-left: 4px solid #14b8a6;
+        }
+
+        .pdf-contact-title {
+            font-weight: 600;
+            color: #0f766e;
+            margin-bottom: 6px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pdf-contact-text {
+            color: #475569;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .ficha-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .compact-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <a href="{% url 'panel_cliente' %}" class="btn-volver">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Panel
+    </a>
+        <i class="fas fa-arrow-left"></i>
+        Volver a Mis Fichas
+    </a>
+
+    <div class="ficha-header">
+        <h1 class="ficha-title">Información del Paciente</h1>
+        <div class="ficha-meta">
+            {% if odontograma.fecha_creacion %}
+            <span>
+                <i class="fas fa-calendar"></i>
+                Creada: {{ odontograma.fecha_creacion|date:"d/m/Y H:i" }}
+            </span>
+            {% endif %}
+            {% if odontograma.fecha_actualizacion %}
+            <span>
+                <i class="fas fa-edit"></i>
+                Actualizada: {{ odontograma.fecha_actualizacion|date:"d/m/Y H:i" }}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="ficha-grid">
+        <div class="info-item">
+            <div class="info-label">Nombre del Paciente</div>
+            <div class="info-value {% if not odontograma.paciente_nombre %}empty{% endif %}">
+                {{ odontograma.paciente_nombre|default:"No especificado" }}
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Email</div>
+            <div class="info-value {% if not odontograma.paciente_email %}empty{% endif %}">
+                {{ odontograma.paciente_email|default:"No especificado" }}
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Teléfono</div>
+            <div class="info-value {% if not odontograma.paciente_telefono %}empty{% endif %}">
+                {{ odontograma.paciente_telefono|default:"No especificado" }}
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Fecha de Nacimiento</div>
+            <div class="info-value {% if not odontograma.paciente_fecha_nacimiento %}empty{% endif %}">
+                {% if odontograma.paciente_fecha_nacimiento %}
+                    {{ odontograma.paciente_fecha_nacimiento|date:"d/m/Y" }}
+                {% else %}
+                    No especificado
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="ficha-section">
+        <h3>
+            <i class="fas fa-comment-medical"></i>
+            Motivo de Consulta
+        </h3>
+        <div class="ficha-content {% if not odontograma.motivo_consulta %}empty-content{% endif %}">
+            {{ odontograma.motivo_consulta|default:"No especificado" }}
+        </div>
+    </div>
+
+    <div class="compact-row">
+        <div class="compact-section">
+            <div class="compact-section-label"><i class="fas fa-notes-medical"></i> Antecedentes Médicos</div>
+            <div class="compact-section-value {% if not odontograma.antecedentes_medicos %}empty-content{% endif %}">
+                {{ odontograma.antecedentes_medicos|default:"No especificado" }}
+            </div>
+        </div>
+        <div class="compact-section">
+            <div class="compact-section-label"><i class="fas fa-exclamation-triangle"></i> Alergias</div>
+            <div class="compact-section-value {% if not odontograma.alergias %}empty-content{% endif %}">
+                {{ odontograma.alergias|default:"No especificado" }}
+            </div>
+        </div>
+    </div>
+
+    <div class="compact-row">
+        <div class="compact-section">
+            <div class="compact-section-label"><i class="fas fa-pills"></i> Medicamentos Actuales</div>
+            <div class="compact-section-value {% if not odontograma.medicamentos_actuales %}empty-content{% endif %}">
+                {{ odontograma.medicamentos_actuales|default:"No especificado" }}
+            </div>
+        </div>
+        <div class="compact-section">
+            <div class="compact-section-label"><i class="fas fa-tooth"></i> Higiene Oral / Estado General</div>
+            <div class="compact-section-value">
+                <strong>Higiene:</strong> {{ odontograma.higiene_oral|default:"No especificado" }}<br>
+                <strong>Estado:</strong> {{ odontograma.estado_general|default:"No especificado" }}
+            </div>
+        </div>
+    </div>
+
+    <div class="ficha-section">
+        <h3>
+            <i class="fas fa-sticky-note"></i>
+            Observaciones
+        </h3>
+        <div class="ficha-content {% if not odontograma.observaciones %}empty-content{% endif %}">
+            {{ odontograma.observaciones|default:"No especificado" }}
+        </div>
+    </div>
+
+    <div class="ficha-section">
+        <h3>
+            <i class="fas fa-clipboard-list"></i>
+            Plan de Tratamiento
+        </h3>
+        <div class="ficha-content {% if not odontograma.plan_tratamiento %}empty-content{% endif %}">
+            {{ odontograma.plan_tratamiento|default:"No especificado" }}
+        </div>
+    </div>
+
+    <!-- Sección de Información sobre el PDF -->
+    <div class="ficha-section" style="margin-top: 16px;">
+        <h3>
+            <i class="fas fa-file-pdf"></i>
+            Documento PDF
+        </h3>
+        <div class="pdf-info-box">
+            <div class="pdf-info-content">
+                <i class="fas fa-info-circle pdf-info-icon"></i>
+                <div class="pdf-info-title">Documento PDF Disponible</div>
+                <div class="pdf-info-text">
+                    Aquí puedes ver un resumen de tu ficha odontológica. Si necesitas el documento PDF oficial 
+                    para presentarlo en otras instituciones o para tus registros personales, por favor 
+                    contacta con nuestra clínica.
+                </div>
+                <div class="pdf-contact-box">
+                    <div class="pdf-contact-title">
+                        <i class="fas fa-phone-alt"></i> Contáctanos:
+                    </div>
+                    <div class="pdf-contact-text">
+                        Puedes comunicarte con nosotros por teléfono, email o acercándote a nuestras instalaciones 
+                        para solicitar una copia oficial del documento PDF de tu ficha odontológica.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends 'reservas/base_cliente.html' %}
+{% load static %}
+
+{% block title %}Mis Consentimientos Informados - Clínica San Felipe{% endblock %}
+
+{% block header_icon %}<i class="fas fa-file-signature"></i>{% endblock %}
+{% block header_title %}Mis Consentimientos Informados{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .consentimientos-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .consentimiento-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .consentimiento-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .consentimiento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .consentimiento-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .badge-vencido {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+
+        .consentimiento-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .info-item i {
+            color: #14b8a6;
+            width: 20px;
+        }
+
+        .consentimiento-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .consentimiento-header {
+                flex-direction: column;
+            }
+
+            .consentimiento-actions {
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <a href="{% url 'panel_cliente' %}" class="btn-volver">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Panel
+    </a>
+
+    {% if consentimientos %}
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-number">{{ total }}</div>
+            <div class="stats-label">Total de Consentimientos</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-number">{{ pendientes }}</div>
+            <div class="stats-label">Pendientes de Firma</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-number">{{ firmados }}</div>
+            <div class="stats-label">Firmados</div>
+        </div>
+    </div>
+
+    <div class="consentimientos-grid">
+        {% for consentimiento in consentimientos %}
+        <div class="consentimiento-card">
+            <div class="consentimiento-header">
+                <h3 class="consentimiento-title">{{ consentimiento.titulo }}</h3>
+                <span class="badge badge-{{ consentimiento.estado }}">
+                    {% if consentimiento.estado == 'pendiente' %}
+                    <i class="fas fa-clock"></i>
+                    {% elif consentimiento.estado == 'firmado' %}
+                    <i class="fas fa-check-circle"></i>
+                    {% elif consentimiento.estado == 'rechazado' %}
+                    <i class="fas fa-times-circle"></i>
+                    {% else %}
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {% endif %}
+                    {{ consentimiento.estado_display }}
+                </span>
+            </div>
+
+            <div class="consentimiento-info">
+                <div class="info-item">
+                    <i class="fas fa-tooth"></i>
+                    <span><strong>Tipo:</strong> {{ consentimiento.tipo_display }}</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-calendar"></i>
+                    <span><strong>Creado:</strong> {{ consentimiento.fecha_creacion|date:"d/m/Y" }}</span>
+                </div>
+                {% if consentimiento.fecha_firma %}
+                <div class="info-item">
+                    <i class="fas fa-check"></i>
+                    <span><strong>Firmado:</strong> {{ consentimiento.fecha_firma|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+                {% if consentimiento.fecha_vencimiento %}
+                <div class="info-item">
+                    <i class="fas fa-clock"></i>
+                    <span><strong>Válido hasta:</strong> {{ consentimiento.fecha_vencimiento|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="consentimiento-actions">
+                <a href="{% url 'ver_consentimiento' consentimiento.id %}" class="btn btn-secondary">
+                    <i class="fas fa-eye"></i> Ver Detalles
+                </a>
+                {% if consentimiento.estado == 'pendiente' %}
+                <a href="{% url 'ver_consentimiento' consentimiento.id %}" class="btn btn-primary">
+                    <i class="fas fa-signature"></i> Firmar Ahora
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-file-signature"></i>
+        <h3>No hay consentimientos</h3>
+        <p>No tienes consentimientos informados registrados en este momento.</p>
+    </div>
+    {% endif %}
+{% endblock %}

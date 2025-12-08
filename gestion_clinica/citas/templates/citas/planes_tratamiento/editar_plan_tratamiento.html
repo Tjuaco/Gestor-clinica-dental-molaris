@@ -1,0 +1,449 @@
+{% extends 'citas/base.html' %}
+
+{% block title %}Editar Plan de Tratamiento - Clínica Dental{% endblock %}
+{% block page_title %}<i class="fas fa-edit"></i> Editar Plan de Tratamiento{% endblock %}
+{% block page_subtitle %}Modifica el plan de tratamiento: {{ plan.nombre }}{% endblock %}
+
+{% block content %}
+<div class="section">
+    <form method="POST" id="planForm">
+        {% csrf_token %}
+        
+        <!-- Información Básica -->
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <h3 style="margin: 0 0 20px 0; color: #1e293b; font-size: 1.25rem; font-weight: 600;">
+                <i class="fas fa-info-circle"></i> Información Básica
+            </h3>
+            <div style="display: grid; gap: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Cliente</label>
+                    <input type="text" value="{{ plan.cliente.nombre_completo }}" disabled
+                           style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; color: #6b7280;">
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px;">
+                        <i class="fas fa-info-circle"></i> El cliente no se puede modificar
+                    </small>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Dentista</label>
+                    <input type="text" value="{{ plan.dentista.nombre_completo }}" disabled
+                           style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; color: #6b7280;">
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px;">
+                        <i class="fas fa-info-circle"></i> El dentista no se puede modificar
+                    </small>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Nombre del Plan *</label>
+                    <input type="text" name="nombre" required placeholder="Ej: Tratamiento de Ortodoncia Completo" 
+                           value="{{ plan.nombre }}"
+                           style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Descripción *</label>
+                    <textarea name="descripcion" required rows="4" placeholder="Describe el plan de tratamiento..." 
+                              style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; resize: vertical;">{{ plan.descripcion }}</textarea>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Diagnóstico *</label>
+                    <textarea name="diagnostico" required rows="4" placeholder="Diagnóstico del paciente..." 
+                              style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; resize: vertical;">{{ plan.diagnostico }}</textarea>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Objetivo *</label>
+                    <textarea name="objetivo" required rows="3" placeholder="Objetivo del tratamiento..." 
+                              style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; resize: vertical;">{{ plan.objetivo }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Presupuesto -->
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <h3 style="margin: 0 0 20px 0; color: #1e293b; font-size: 1.25rem; font-weight: 600;">
+                <i class="fas fa-dollar-sign"></i> Presupuesto
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Presupuesto Total *</label>
+                    <input type="text" name="presupuesto_total" id="presupuesto_total" required placeholder="$0" 
+                           value="{{ plan.presupuesto_total|floatformat:0 }}"
+                           style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <input type="hidden" name="presupuesto_total_raw" id="presupuesto_total_raw">
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px;">
+                        <i class="fas fa-exclamation-triangle"></i> Si modifica el presupuesto, deberá ser aceptado nuevamente por el paciente
+                    </small>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Citas Estimadas</label>
+                    <input type="number" name="citas_estimadas" min="0" placeholder="Ej: 5" 
+                           value="{% if plan.citas_estimadas %}{{ plan.citas_estimadas }}{% endif %}"
+                           style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px;">
+                        Número estimado de citas que requerirá este tratamiento
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fechas Estimadas -->
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <h3 style="margin: 0 0 20px 0; color: #1e293b; font-size: 1.25rem; font-weight: 600;">
+                <i class="fas fa-calendar"></i> Fechas Estimadas
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Fecha de Inicio Estimada</label>
+                    <input type="date" name="fecha_inicio_estimada" 
+                           value="{% if plan.fecha_inicio_estimada %}{{ plan.fecha_inicio_estimada|date:'Y-m-d' }}{% endif %}"
+                           style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Fecha de Fin Estimada</label>
+                    <input type="date" name="fecha_fin_estimada" 
+                           value="{% if plan.fecha_fin_estimada %}{{ plan.fecha_fin_estimada|date:'Y-m-d' }}{% endif %}"
+                           style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notas -->
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <h3 style="margin: 0 0 20px 0; color: #1e293b; font-size: 1.25rem; font-weight: 600;">
+                <i class="fas fa-sticky-note"></i> Notas para el Paciente
+            </h3>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Notas</label>
+                <textarea name="notas_paciente" rows="3" placeholder="Notas que pueden ser visibles para el paciente..." 
+                          style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; resize: vertical;">{{ plan.notas_paciente|default:'' }}</textarea>
+            </div>
+        </div>
+        
+        <!-- Botones de acción -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+            <a href="{% url 'detalle_plan_tratamiento' plan.id %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+/* Sistema de Notificaciones Moderno */
+.notification-container {
+    position: fixed;
+    top: 90px;
+    right: 24px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.notification {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    animation: slideInRight 0.3s ease-out;
+    pointer-events: auto;
+    border-left: 4px solid;
+    min-width: 320px;
+    max-width: 400px;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.notification.success {
+    border-left-color: #10b981;
+    background: linear-gradient(to right, #f0fdf4 0%, white 8%);
+}
+
+.notification.error {
+    border-left-color: #ef4444;
+    background: linear-gradient(to right, #fef2f2 0%, white 8%);
+}
+
+.notification.warning {
+    border-left-color: #f59e0b;
+    background: linear-gradient(to right, #fffbeb 0%, white 8%);
+}
+
+.notification.info {
+    border-left-color: var(--primary-color);
+    background: linear-gradient(to right, #eff6ff 0%, white 8%);
+}
+
+.notification-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+.notification.success .notification-icon {
+    background: #10b981;
+    color: white;
+}
+
+.notification.error .notification-icon {
+    background: #ef4444;
+    color: white;
+}
+
+.notification.warning .notification-icon {
+    background: #f59e0b;
+    color: white;
+}
+
+.notification.info .notification-icon {
+    background: var(--primary-color);
+    color: white;
+}
+
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.notification-message {
+    font-size: 0.875rem;
+    color: #64748b;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.notification-close {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.notification-close:hover {
+    color: #374151;
+}
+
+.notification.hiding {
+    animation: slideOutRight 0.3s ease-out forwards;
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+</style>
+
+<script>
+// Sistema de Notificaciones
+function showNotification(type, message, duration = 5000) {
+    const validTypes = ['success', 'error', 'warning', 'info'];
+    type = validTypes.includes(type) ? type : 'info';
+    
+    let container = document.getElementById('notificationContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notificationContainer';
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    const icons = {
+        success: '<i class="fas fa-check-circle"></i>',
+        error: '<i class="fas fa-exclamation-circle"></i>',
+        warning: '<i class="fas fa-exclamation-triangle"></i>',
+        info: '<i class="fas fa-info-circle"></i>'
+    };
+    
+    const titles = {
+        success: 'Éxito',
+        error: 'Error',
+        warning: 'Advertencia',
+        info: 'Información'
+    };
+    
+    notification.innerHTML = `
+        <div class="notification-icon">${icons[type]}</div>
+        <div class="notification-content">
+            <div class="notification-title">${titles[type]}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+        <button class="notification-close" onclick="this.closest('.notification').remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(notification);
+    
+    if (duration > 0) {
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.classList.add('hiding');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        }, duration);
+    }
+    
+    return notification;
+}
+
+// Formato de moneda para presupuesto
+function initFormatoMoneda() {
+    const presupuestoInput = document.getElementById('presupuesto_total');
+    const presupuestoRaw = document.getElementById('presupuesto_total_raw');
+    
+    if (!presupuestoInput || !presupuestoRaw) return;
+    
+    // Inicializar con el valor actual
+    const valorInicial = presupuestoInput.value.replace(/[^\d]/g, '');
+    if (valorInicial) {
+        const numero = parseInt(valorInicial, 10);
+        presupuestoInput.value = '$' + numero.toLocaleString('es-CL');
+        presupuestoRaw.value = numero.toString();
+    }
+    
+    presupuestoInput.addEventListener('input', function(e) {
+        let valor = e.target.value.replace(/[^\d]/g, '');
+        
+        if (valor === '' || valor === '0') {
+            e.target.value = '';
+            presupuestoRaw.value = '';
+            return;
+        }
+        
+        const numero = parseInt(valor, 10);
+        if (!isNaN(numero)) {
+            e.target.value = '$' + numero.toLocaleString('es-CL');
+            presupuestoRaw.value = numero.toString();
+        }
+    });
+    
+    presupuestoInput.addEventListener('blur', function(e) {
+        let valor = e.target.value.replace(/[^\d]/g, '');
+        const numero = parseInt(valor, 10);
+        
+        if (isNaN(numero) || numero === 0 || valor === '' || valor === '0') {
+            e.target.value = '';
+            presupuestoRaw.value = '';
+            return;
+        }
+        
+        e.target.value = '$' + numero.toLocaleString('es-CL');
+        presupuestoRaw.value = numero.toString();
+    });
+    
+    presupuestoInput.addEventListener('focus', function(e) {
+        let valor = e.target.value.replace(/[^\d]/g, '');
+        if (valor) {
+            e.target.value = valor;
+        }
+    });
+}
+
+// Validaciones del formulario
+document.addEventListener('DOMContentLoaded', function() {
+    initFormatoMoneda();
+    
+    const form = document.getElementById('planForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const nombre = form.querySelector('input[name="nombre"]').value.trim();
+            const descripcion = form.querySelector('textarea[name="descripcion"]').value.trim();
+            const diagnostico = form.querySelector('textarea[name="diagnostico"]').value.trim();
+            const objetivo = form.querySelector('textarea[name="objetivo"]').value.trim();
+            const presupuestoRaw = document.getElementById('presupuesto_total_raw');
+            const presupuesto = presupuestoRaw ? presupuestoRaw.value : '';
+            
+            if (!nombre) {
+                e.preventDefault();
+                showNotification('error', 'Por favor, ingrese un nombre para el plan de tratamiento.');
+                return false;
+            }
+            
+            if (!descripcion) {
+                e.preventDefault();
+                showNotification('error', 'Por favor, ingrese una descripción del plan de tratamiento.');
+                return false;
+            }
+            
+            if (!diagnostico) {
+                e.preventDefault();
+                showNotification('error', 'Por favor, ingrese el diagnóstico del paciente.');
+                return false;
+            }
+            
+            if (!objetivo) {
+                e.preventDefault();
+                showNotification('error', 'Por favor, ingrese el objetivo del tratamiento.');
+                return false;
+            }
+            
+            if (!presupuesto || presupuesto === '0') {
+                e.preventDefault();
+                showNotification('error', 'Por favor, ingrese un presupuesto total válido mayor a 0.');
+                return false;
+            }
+            
+            const presupuestoNum = parseInt(presupuesto, 10);
+            if (isNaN(presupuestoNum) || presupuestoNum <= 0) {
+                e.preventDefault();
+                showNotification('error', 'El presupuesto total debe ser un número mayor a 0.');
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

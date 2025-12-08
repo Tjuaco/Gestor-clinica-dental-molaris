@@ -1,0 +1,302 @@
+{% extends 'reservas/base_cliente.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil - Clínica San Felipe{% endblock %}
+
+{% block header_icon %}<i class="fas fa-user"></i>{% endblock %}
+{% block header_title %}Mi Perfil{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .info-section {
+            margin-bottom: 30px;
+        }
+
+        .info-section h3 {
+            color: #1e293b;
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .info-section h3 i {
+            color: #14b8a6;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-label {
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-value {
+            color: #1e293b;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <a href="{% url 'panel_cliente' %}" class="btn-volver">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Panel
+    </a>
+    <div class="info-section">
+        <h3>
+            <i class="fas fa-user-circle"></i>
+            Información Personal
+        </h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">
+                    <i class="fas fa-signature"></i>
+                    Nombre Completo
+                </div>
+                <div class="info-value">
+                    {% if perfil and perfil.nombre_completo %}
+                        {{ perfil.nombre_completo }}
+                    {% elif user.first_name or user.last_name %}
+                        {{ user.first_name }} {{ user.last_name }}
+                    {% else %}
+                        No especificado
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">
+                    <i class="fas fa-user"></i>
+                    Nombre de Usuario
+                </div>
+                <div class="info-value">{{ user.username }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h3>
+            <i class="fas fa-envelope"></i>
+            Información de Contacto
+        </h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">
+                    <i class="fas fa-at"></i>
+                    Email
+                </div>
+                <div class="info-value">
+                    {% if perfil and perfil.email %}
+                        {{ perfil.email }}
+                    {% elif user.email %}
+                        {{ user.email }}
+                    {% else %}
+                        No especificado
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">
+                    <i class="fas fa-phone"></i>
+                    Teléfono
+                </div>
+                <div class="info-value">
+                    {% if perfil and perfil.telefono %}
+                        {{ perfil.telefono }}
+                        <span class="status-badge verified" style="background: #dcfce7; color: #166534;">
+                            <i class="fas fa-info-circle"></i>
+                            Contacto
+                        </span>
+                    {% else %}
+                        <span style="color: #94a3b8; font-style: italic;">No especificado</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h3>
+            <i class="fas fa-id-card"></i>
+            Información de Identificación
+        </h3>
+        <div class="info-grid">
+            {% if perfil and perfil.rut %}
+            <div class="info-item">
+                <div class="info-label">
+                    <i class="fas fa-fingerprint"></i>
+                    RUT
+                </div>
+                <div class="info-value">
+                    {{ perfil.rut }}
+                </div>
+            </div>
+            {% endif %}
+            {% if perfil and perfil.fecha_nacimiento %}
+            <div class="info-item">
+                <div class="info-label">
+                    <i class="fas fa-birthday-cake"></i>
+                    Fecha de Nacimiento
+                </div>
+                <div class="info-value">
+                    {{ perfil.fecha_nacimiento|date:"d/m/Y" }}
+                    {% if perfil.edad %}
+                        <span style="color: #64748b; font-size: 0.9rem;">({{ perfil.edad }} años)</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if perfil and perfil.alergias %}
+    <div class="info-section">
+        <h3>
+            <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i>
+            Información Médica Importante
+        </h3>
+        <div class="info-grid">
+            <div class="info-item" style="grid-column: 1 / -1; background: #fef2f2; border-left: 4px solid #dc2626;">
+                <div class="info-label" style="color: #dc2626;">
+                    <i class="fas fa-allergies"></i>
+                    Alergias Conocidas
+                </div>
+                <div class="info-value" style="color: #991b1b; white-space: pre-wrap;">
+                    {{ perfil.alergias }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="info-section">
+        <h3>
+            <i class="fas fa-info-circle"></i>
+            Información Importante
+        </h3>
+        <div class="info-item" style="grid-column: 1 / -1; background: linear-gradient(135deg, #f0fdfa, #e0f2f1); border-left: 4px solid #14b8a6; padding: 24px;">
+            <div style="display: flex; align-items: start; gap: 15px;">
+                <div style="color: #14b8a6; font-size: 1.5rem;">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div style="flex: 1;">
+                    <div class="info-label" style="color: #0f766e; font-size: 1rem; font-weight: 600; margin-bottom: 12px;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Recuerda mantener tu información actualizada
+                    </div>
+                    <div class="info-value" style="color: #475569; font-size: 0.9375rem; font-weight: 400; line-height: 1.6;">
+                        Es importante que tus datos personales, contacto e información médica estén siempre actualizados para brindarte el mejor servicio. Si necesitas actualizar algún dato de tu perfil, por favor comunícate con nuestra clínica.
+                    </div>
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #ccfbf1;">
+                        <div style="display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: 0.875rem; font-weight: 500;">
+                            <i class="fas fa-phone-alt"></i>
+                            <span>+56 9 2678 6544</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: 0.875rem; font-weight: 500; margin-top: 8px;">
+                            <i class="fas fa-envelope"></i>
+                            <span>miclinicacontacto@gmail.com</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <a href="{% url 'panel_cliente' %}" class="btn btn-primary">
+            <i class="fas fa-calendar"></i>
+            Ver Mis Citas
+        </a>
+        <a href="{% url 'historial_citas' %}" class="btn btn-secondary">
+            <i class="fas fa-history"></i>
+            Ver Historial
+        </a>
+    </div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends 'reservas/base_cliente.html' %}
+{% load static %}
+
+{% block title %}Presupuestos Pendientes - Clínica San Felipe{% endblock %}
+
+{% block header_icon %}<i class="fas fa-dollar-sign"></i>{% endblock %}
+{% block header_title %}Presupuestos Pendientes{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .header-description {
+            color: #64748b;
+            margin-top: 8px;
+            font-size: 0.875rem;
+        }
+
+        .presupuestos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .presupuesto-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .presupuesto-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .presupuesto-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .presupuesto-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            flex: 1;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-pendiente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .presupuesto-info {
+            margin-bottom: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .info-item i {
+            color: #14b8a6;
+            width: 18px;
+        }
+
+        .precio-info {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-left: 4px solid #f59e0b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .precio-total {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #92400e;
+            margin: 0;
+        }
+
+        .precio-label {
+            font-size: 0.75rem;
+            color: #78350f;
+            margin-top: 4px;
+        }
+
+        .presupuesto-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+
+        @media (max-width: 768px) {
+            .presupuestos-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <a href="{% url 'panel_cliente' %}" class="btn-volver">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Panel
+    </a>
+
+    <p class="header-description">Revisa y acepta los presupuestos de tus tratamientos. Una vez aceptados, aparecerán en "Mis Tratamientos".</p>
+
+    {% if presupuestos %}
+    <div class="presupuestos-grid">
+        {% for presupuesto in presupuestos %}
+        <div class="presupuesto-card">
+            <div class="presupuesto-header">
+                <h3 class="presupuesto-title">{{ presupuesto.nombre }}</h3>
+                <span class="badge badge-pendiente">
+                    Pendiente
+                </span>
+            </div>
+
+            <div class="presupuesto-info">
+                <div class="info-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Creado: {{ presupuesto.fecha_creacion|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+
+            {% if presupuesto.precio_final %}
+            <div class="precio-info">
+                <p class="precio-total">${{ presupuesto.precio_final|floatformat:0 }}</p>
+                <p class="precio-label">Precio Final</p>
+            </div>
+            {% endif %}
+
+            <div class="presupuesto-actions">
+                <a href="{% url 'ver_presupuesto' presupuesto.id %}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i>
+                    Ver y Aceptar
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-dollar-sign"></i>
+        <h3>No hay presupuestos pendientes</h3>
+        <p>Cuando se te asigne un presupuesto, aparecerá aquí para que puedas revisarlo y aceptarlo.</p>
+    </div>
+    {% endif %}
+{% endblock %}

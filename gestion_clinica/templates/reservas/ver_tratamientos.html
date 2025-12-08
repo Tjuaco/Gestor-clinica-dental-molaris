@@ -1,0 +1,184 @@
+{% extends 'reservas/base_cliente.html' %}
+{% load static %}
+
+{% block title %}Mis Tratamientos - Clínica San Felipe{% endblock %}
+
+{% block header_icon %}<i class="fas fa-clipboard-list"></i>{% endblock %}
+{% block header_title %}Mis Tratamientos{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .header-description {
+            color: #64748b;
+            margin-top: 8px;
+            font-size: 0.875rem;
+        }
+
+        .tratamientos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .tratamiento-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .tratamiento-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .tratamiento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .tratamiento-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            flex: 1;
+        }
+
+        .badge-borrador {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .badge-aprobado {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-en-progreso {
+            background: #fce7f3;
+            color: #9f1239;
+        }
+
+        .tratamiento-info {
+            margin-bottom: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .info-item i {
+            color: #14b8a6;
+            width: 18px;
+        }
+
+        .precio-info {
+            background: #f0fdfa;
+            border-left: 4px solid #14b8a6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .precio-total {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f766e;
+            margin: 0;
+        }
+
+        .precio-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .tratamiento-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+
+        @media (max-width: 768px) {
+            .tratamientos-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <a href="{% url 'panel_cliente' %}" class="btn-volver">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Panel
+    </a>
+
+    <p class="header-description">Aquí se muestran tus tratamientos con presupuesto aceptado. Para aceptar nuevos presupuestos, ve a la sección "Presupuestos".</p>
+
+    {% if tratamientos %}
+    <div class="tratamientos-grid">
+        {% for tratamiento in tratamientos %}
+        <div class="tratamiento-card">
+            <div class="tratamiento-header">
+                <h3 class="tratamiento-title">{{ tratamiento.nombre }}</h3>
+                <span class="badge 
+                    {% if tratamiento.presupuesto_aceptado %}badge-aceptado
+                    {% elif tratamiento.estado == 'borrador' %}badge-borrador
+                    {% elif tratamiento.estado == 'pendiente_aprobacion' %}badge-pendiente
+                    {% elif tratamiento.estado == 'aprobado' %}badge-aprobado
+                    {% elif tratamiento.estado == 'en_progreso' %}badge-en-progreso
+                    {% else %}badge-pendiente{% endif %}">
+                    {% if tratamiento.presupuesto_aceptado %}
+                        Presupuesto Aceptado
+                    {% else %}
+                        {{ tratamiento.estado|title }}
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="tratamiento-info">
+                <div class="info-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Creado: {{ tratamiento.fecha_creacion|date:"d/m/Y" }}</span>
+                </div>
+                {% if tratamiento.presupuesto_aceptado and tratamiento.fecha_aceptacion_presupuesto %}
+                <div class="info-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Aceptado: {{ tratamiento.fecha_aceptacion_presupuesto|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if tratamiento.precio_final %}
+            <div class="precio-info">
+                <p class="precio-total">${{ tratamiento.precio_final|floatformat:0 }}</p>
+                <p class="precio-label">Precio Final</p>
+            </div>
+            {% endif %}
+
+            <div class="tratamiento-actions">
+                <a href="{% url 'ver_tratamiento' tratamiento.id %}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i>
+                    Ver Detalles
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-clipboard-list"></i>
+        <h3>No tienes tratamientos</h3>
+        <p>Cuando se te asigne un tratamiento, aparecerá aquí.</p>
+    </div>
+    {% endif %}
+{% endblock %}

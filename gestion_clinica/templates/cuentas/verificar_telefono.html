@@ -1,0 +1,451 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar Teléfono - Clínica San Felipe</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+            min-height: 100vh;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .verify-container { 
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .verify-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #14b8a6, #0d9488);
+        }
+
+        .verify-header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+        }
+
+        .verify-header i {
+            font-size: 4rem;
+            color: #14b8a6;
+            margin-bottom: 15px;
+        }
+
+        .verify-header h1 { 
+            color: #333; 
+            margin: 0 0 10px 0; 
+            font-size: 2rem;
+            background: linear-gradient(45deg, #14b8a6, #0d9488);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .verify-header p { 
+            color: #666; 
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .phone-display {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border: 2px solid #14b8a6;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .phone-display i {
+            color: #14b8a6;
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+
+        .phone-display strong {
+            color: #0f766e;
+            font-size: 1.1rem;
+        }
+
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+
+        .form-group label { 
+            display: block; 
+            margin-bottom: 8px; 
+            color: #333; 
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .code-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 24px;
+            text-align: center;
+            letter-spacing: 10px;
+            font-weight: bold;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: #14b8a6;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn-verify { 
+            width: 100%; 
+            background: linear-gradient(45deg, #14b8a6, #0d9488); 
+            color: white; 
+            border: none; 
+            padding: 16px; 
+            border-radius: 10px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-verify:hover { 
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(20, 184, 166, 0.3);
+        }
+
+        .btn-resend {
+            width: 100%;
+            background: white;
+            color: #14b8a6;
+            border: 2px solid #14b8a6;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-resend:hover {
+            background: #14b8a6;
+            color: white;
+        }
+
+        .messages { 
+            margin-bottom: 20px; 
+        }
+
+        .message { 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .message.success { 
+            background: linear-gradient(45deg, #14b8a6, #0d9488);
+            color: white;
+            border-left: 4px solid #0f766e;
+        }
+
+        .message.error { 
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+            border-left: 4px solid #c62828;
+        }
+
+        .errorlist { 
+            color: #dc3545; 
+            font-size: 14px; 
+            margin: 5px 0; 
+            list-style: none; 
+            padding: 0; 
+        }
+
+        .help-text {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #14b8a6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .verify-container {
+                padding: 30px;
+            }
+
+            .verify-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .code-input {
+                font-size: 20px;
+                letter-spacing: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .verify-container {
+                padding: 25px;
+            }
+
+            .verify-header h1 {
+                font-size: 1.6rem;
+            }
+
+            .verify-header i {
+                font-size: 3rem;
+            }
+        }
+
+        /* Notificaciones personalizadas */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            max-width: 400px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            animation: slideInRight 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+            border-left: 4px solid #0f766e;
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            border-left: 4px solid #c62828;
+        }
+
+        .notification i {
+            font-size: 1.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .notification {
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-container">
+        <div class="verify-header">
+            <i class="fas fa-envelope"></i>
+            <h1>Verificar Correo Electrónico</h1>
+            <p>Ingresa el código que enviamos a tu correo electrónico</p>
+        </div>
+
+        <div class="phone-display" style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #14b8a6; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 25px;">
+            <i class="fas fa-envelope" style="color: #14b8a6; font-size: 1.5rem; margin-right: 10px;"></i>
+            <strong style="color: #0f766e; font-size: 1.1rem;">{{ registro_data.email|default:telefono }}</strong>
+            <div style="margin-top: 10px; font-size: 0.9rem; color: #64748b;">
+                <i class="fas fa-info-circle"></i> Revisa tu bandeja de entrada y carpeta de spam
+            </div>
+        </div>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% endif %}
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="codigo">
+                    <i class="fas fa-key"></i> Código de Verificación
+                </label>
+                <input type="text" 
+                       name="codigo" 
+                       id="codigo" 
+                       class="code-input"
+                       maxlength="6"
+                       pattern="[0-9]{6}"
+                       placeholder="000000"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
+                       required
+                       autofocus>
+                <div class="help-text">
+                    <i class="fas fa-envelope" style="color: #14b8a6;"></i>
+                    Ingresa el código de 6 dígitos que enviamos a <strong>{{ registro_data.email|default:telefono }}</strong>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-verify">
+                <i class="fas fa-check"></i>
+                Verificar Código
+            </button>
+        </form>
+
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button type="button" class="btn-resend" onclick="reenviarCodigo()" style="flex: 1;">
+                <i class="fas fa-redo"></i>
+                Reenviar Código
+            </button>
+            <a href="{% url 'registro_cliente' %}" style="flex: 1; display: inline-block; text-align: center; background: white; color: #64748b; border: 2px solid #e0e0e0; padding: 12px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; font-weight: 600; text-decoration: none;">
+                <i class="fas fa-edit"></i>
+                Cambiar Correo
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Función para mostrar notificaciones estilizadas
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            notification.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remover después de 4 segundos
+            setTimeout(() => {
+                notification.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        function reenviarCodigo() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            
+            fetch('{% url "reenviar_codigo" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                } else {
+                    showNotification(data.message, 'error');
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-redo"></i> Reenviar Código';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error al reenviar código. Por favor, intenta nuevamente.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-redo"></i> Reenviar Código';
+            });
+        }
+
+        // Auto-focus en el campo de código
+        document.addEventListener('DOMContentLoaded', function() {
+            const codigoInput = document.getElementById('codigo');
+            if (codigoInput) {
+                codigoInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>

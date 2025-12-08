@@ -1,0 +1,430 @@
+{% extends 'citas/base.html' %}
+
+{% block title %}Editar Sala - Clínica Dental{% endblock %}
+
+{% block page_title %}{% endblock %}
+{% block page_subtitle %}{% endblock %}
+
+{% block content %}
+<div class="personal-container">
+    <!-- Contenedor de Notificaciones -->
+    <div id="notificationContainer" class="notification-container"></div>
+    
+    <!-- Header -->
+    <div class="header-with-stats">
+        <div class="page-header">
+            <h1 class="page-title"><i class="fas fa-edit"></i> Editar Sala: {{ sala.nombre }}</h1>
+            <p class="page-subtitle">Modifica la información de la sala</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'gestor_salas' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                <span>Volver a Salas</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="section form-section-servicio">
+        <form method="post" class="form-crear-servicio" id="formEditarSala">
+            {% csrf_token %}
+            
+            <!-- Información Básica -->
+            <div class="form-section-card">
+                <div class="section-card-header">
+                    <i class="fas fa-info-circle"></i>
+                    <h3>Información Básica</h3>
+                </div>
+                <div class="section-card-body">
+                    <div class="form-group-modern full-width">
+                        <label class="label-modern">
+                            <i class="fas fa-door-open"></i>
+                            Nombre de la Sala <span class="required">*</span>
+                        </label>
+                        <div class="input-wrapper-modern">
+                            <input type="text" name="nombre" value="{{ sala.nombre }}" required placeholder="Ej: Sala 1, Consultorio A..." class="input-modern">
+                        </div>
+                        <small class="hint-text">
+                            <i class="fas fa-info-circle"></i> Nombre descriptivo de la sala
+                        </small>
+                    </div>
+
+                    <div class="form-group-modern full-width">
+                        <label class="label-modern">
+                            <i class="fas fa-align-left"></i>
+                            Descripción
+                        </label>
+                        <div class="input-wrapper-modern">
+                            <textarea name="descripcion" rows="4" placeholder="Descripción de la sala (opcional)..." class="input-modern textarea-modern">{{ sala.descripcion|default:'' }}</textarea>
+                        </div>
+                        <small class="hint-text">
+                            <i class="fas fa-info-circle"></i> Descripción opcional de la sala
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado -->
+            <div class="form-section-card">
+                <div class="section-card-header">
+                    <i class="fas fa-toggle-on"></i>
+                    <h3>Estado</h3>
+                </div>
+                <div class="section-card-body">
+                    <div class="form-group-modern">
+                        <label class="label-modern checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" name="activa" value="1" {% if sala.activa %}checked{% endif %} style="margin-right: 8px; width: auto; cursor: pointer;">
+                            <span>Sala Activa</span>
+                        </label>
+                        <small class="hint-text">
+                            <i class="fas fa-info-circle"></i> Las salas inactivas no aparecerán en las opciones de asignación
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del Sistema -->
+            <div class="form-section-card">
+                <div class="section-card-header">
+                    <i class="fas fa-database"></i>
+                    <h3>Información del Sistema</h3>
+                </div>
+                <div class="section-card-body">
+                    <div class="info-grid-modern">
+                        <div class="info-item-modern">
+                            <div class="info-label-modern">
+                                <i class="fas fa-calendar-plus"></i> Creado
+                            </div>
+                            <div class="info-value-modern">
+                                {{ sala.creado_el|date:"d/m/Y H:i" }}
+                            </div>
+                        </div>
+                        <div class="info-item-modern">
+                            <div class="info-label-modern">
+                                <i class="fas fa-clock"></i> Última actualización
+                            </div>
+                            <div class="info-value-modern">
+                                {{ sala.actualizado_el|date:"d/m/Y H:i" }}
+                            </div>
+                        </div>
+                        <div class="info-item-modern">
+                            <div class="info-label-modern">
+                                <i class="fas fa-user-md"></i> Dentistas asignados
+                            </div>
+                            <div class="info-value-modern">
+                                {{ sala.dentistas.count }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="form-actions-modern">
+                <button type="submit" class="btn-primary-modern">
+                    <i class="fas fa-save"></i>
+                    <span>Guardar Cambios</span>
+                </button>
+                <a href="{% url 'gestor_salas' %}" class="btn-secondary-modern">
+                    <i class="fas fa-times"></i>
+                    <span>Cancelar</span>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Estilos similares a editar_servicio */
+.personal-container {
+    padding: 0;
+}
+
+.header-with-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    gap: 20px;
+}
+
+.page-header {
+    flex: 1;
+}
+
+.page-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-subtitle {
+    color: #64748b;
+    font-size: 16px;
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.btn-back {
+    padding: 12px 20px;
+    background: white;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-back:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.form-section-servicio {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.form-section-card {
+    margin-bottom: 24px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.section-card-header {
+    background: #f8fafc;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-card-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.section-card-body {
+    padding: 20px;
+}
+
+.form-group-modern {
+    margin-bottom: 20px;
+}
+
+.form-group-modern.full-width {
+    width: 100%;
+}
+
+.label-modern {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 14px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.input-wrapper-modern {
+    position: relative;
+}
+
+.input-modern {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.input-modern:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.textarea-modern {
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
+.hint-text {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.info-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.info-item-modern {
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.info-label-modern {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.info-value-modern {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.form-actions-modern {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.btn-primary-modern {
+    padding: 12px 24px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-modern:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.btn-secondary-modern {
+    padding: 12px 24px;
+    background: white;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary-modern:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.required {
+    color: #ef4444;
+}
+</style>
+
+<script>
+// Manejar envío del formulario
+document.getElementById('formEditarSala').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    formData.append('X-Requested-With', 'XMLHttpRequest');
+    
+    const submitBtn = this.querySelector('.btn-primary-modern');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        
+        if (data.success) {
+            showNotification('success', data.message);
+            setTimeout(() => {
+                window.location.href = '{% url "gestor_salas" %}';
+            }, 1000);
+        } else {
+            showNotification('error', data.message);
+        }
+    })
+    .catch(error => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        showNotification('error', 'Error al guardar los cambios');
+    });
+});
+
+function showNotification(type, message) {
+    const container = document.getElementById('notificationContainer');
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+    `;
+    container.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            container.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+</script>
+{% endblock %}
+

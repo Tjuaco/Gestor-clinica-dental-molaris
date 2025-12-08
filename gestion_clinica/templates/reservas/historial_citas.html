@@ -1,0 +1,278 @@
+{% extends 'reservas/base_cliente.html' %}
+{% load static %}
+
+{% block title %}Historial de Citas - Clínica San Felipe{% endblock %}
+
+{% block header_icon %}<i class="fas fa-history"></i>{% endblock %}
+{% block header_title %}Historial de Citas{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-color: #cbd5e1;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .citas-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .cita-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.2s ease;
+        }
+
+        .cita-card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-color: #cbd5e1;
+        }
+
+        .cita-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .cita-fecha {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cita-fecha i {
+            color: #14b8a6;
+        }
+
+        .cita-estado {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cita-estado.reservada {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .cita-estado.confirmada {
+            background: #ccfbf1;
+            color: #0f766e;
+            border: 1px solid #5eead4;
+        }
+
+        .cita-estado.completada {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .cita-estado.cancelada {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .cita-detalles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .detalle-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .detalle-label {
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .detalle-valor {
+            color: #1e293b;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .no-citas {
+            text-align: center;
+            color: #64748b;
+            padding: 60px 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .no-citas i {
+            font-size: 4rem;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+        }
+
+        .no-citas p {
+            margin: 8px 0;
+            font-size: 1rem;
+        }
+
+        .no-citas p:first-of-type {
+            font-weight: 600;
+            color: #475569;
+            font-size: 1.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .cita-detalles {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .cita-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <a href="{% url 'panel_cliente' %}" class="back-link">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Panel
+    </a>
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ citas_historial.count }}</div>
+            <div class="stat-label">Total de Citas</div>
+        </div>
+    </div>
+
+    {% if citas_historial %}
+        <div class="citas-lista">
+            {% for cita in citas_historial %}
+                <div class="cita-card">
+                    <div class="cita-header">
+                        <div class="cita-fecha">
+                            <i class="fas fa-calendar-alt"></i>
+                            {{ cita.fecha_hora|date:"l, j \d\e F \d\e Y - H:i"|capfirst }} hrs
+                        </div>
+                        <span class="cita-estado {{ cita.estado }}">
+                            {% if cita.estado == 'reservada' %}
+                                <i class="fas fa-clock"></i> Reservada
+                            {% elif cita.estado == 'confirmada' %}
+                                <i class="fas fa-check"></i> Confirmada
+                            {% elif cita.estado == 'completada' %}
+                                <i class="fas fa-check-circle"></i> Completada
+                            {% elif cita.estado == 'cancelada' %}
+                                <i class="fas fa-times-circle"></i> Cancelada
+                            {% else %}
+                                <i class="fas fa-info-circle"></i> {{ cita.estado|title }}
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="cita-detalles">
+                        <div class="detalle-item">
+                            <span class="detalle-label">Tipo de Consulta</span>
+                            <span class="detalle-valor">
+                                {% if cita.tipo_servicio %}
+                                    {{ cita.tipo_servicio.nombre }}
+                                {% else %}
+                                    {{ cita.tipo_consulta|default:"Consulta general" }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% if cita.tipo_servicio and cita.tipo_servicio.precio_base %}
+                        <div class="detalle-item">
+                            <span class="detalle-label">Precio del Servicio</span>
+                            <span class="detalle-valor" style="color: #059669; font-weight: 700;">
+                                ${{ cita.tipo_servicio.precio_base|floatformat:0 }}
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% if cita.dentista %}
+                        <div class="detalle-item">
+                            <span class="detalle-label">Dentista</span>
+                            <span class="detalle-valor">Dr(a). {{ cita.dentista.nombre_completo }}</span>
+                        </div>
+                        {% if cita.dentista.especialidad %}
+                        <div class="detalle-item">
+                            <span class="detalle-label">Especialidad</span>
+                            <span class="detalle-valor">{{ cita.dentista.especialidad }}</span>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="detalle-item">
+                            <span class="detalle-label">Dentista</span>
+                            <span class="detalle-valor">Por asignar</span>
+                        </div>
+                        {% endif %}
+                        <div class="detalle-item">
+                            <span class="detalle-label">Paciente</span>
+                            <span class="detalle-valor">{{ cita.paciente_nombre|default:"No especificado" }}</span>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-citas">
+            <i class="fas fa-clipboard-list"></i>
+            <p>No tienes historial de citas</p>
+            <p>Las citas que reserves aparecerán aquí</p>
+        </div>
+    {% endif %}
+{% endblock %}

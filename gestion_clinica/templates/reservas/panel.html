@@ -1,0 +1,1765 @@
+{% extends 'reservas/base_cliente.html' %}
+{% load static %}
+
+{% block title %}Panel de Reservas - Clínica San Felipe{% endblock %}
+
+{% block header_icon %}<i class="fas fa-calendar"></i>{% endblock %}
+{% block header_title %}Panel de Reservas{% endblock %}
+
+{% block extra_css %}
+    <style>
+        /* Sidebar Izquierdo - Filtros */
+        .filters-sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            z-index: 1;
+        }
+
+        .filters-sidebar-header {
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+            padding: 20px;
+            border-radius: 16px 16px 0 0;
+            text-align: center;
+        }
+
+        .filters-sidebar-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .filters-sidebar-header h3 i {
+            font-size: 1.125rem;
+        }
+
+        .filters-content {
+            padding: 20px;
+        }
+
+        .filtros-section {
+            margin-bottom: 24px;
+        }
+        
+        .filtros-title {
+            color: #1e293b;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filtros-title i {
+            color: #14b8a6;
+            font-size: 0.875rem;
+        }
+        
+        .filtros-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .filtro-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .filtro-label {
+            color: #475569;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .filtro-label i {
+            color: #94a3b8;
+            font-size: 0.75rem;
+        }
+        
+        .filtro-select, .filtro-input {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: #1e293b;
+            background: white;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .filtro-select:hover, .filtro-input:hover {
+            border-color: #cbd5e1;
+        }
+        
+        .filtro-select:focus, .filtro-input:focus {
+            outline: none;
+            border-color: #14b8a6;
+            box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.1);
+        }
+        
+        .filtro-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-filtrar, .btn-limpiar {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Mapa de Ubicación */
+        .mapa-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid #f1f5f9;
+        }
+
+        .mapa-title {
+            color: #1e293b;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mapa-title i {
+            color: #14b8a6;
+        }
+
+        .mapa-container {
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+            margin-bottom: 12px;
+        }
+
+        .mapa-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .mapa-info {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .mapa-info p {
+            margin: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mapa-info i {
+            color: #14b8a6;
+            width: 16px;
+        }
+        
+        .btn-filtrar {
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.875rem;
+        }
+        
+        .btn-filtrar:hover {
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3);
+        }
+        
+        .btn-limpiar {
+            background: white;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.875rem;
+            text-decoration: none;
+        }
+        
+        .btn-limpiar:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+        
+        /* Alert Banner */
+        .alert-banner {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border-left: 4px solid #14b8a6;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .alert-content i {
+            font-size: 1.5rem;
+            color: #14b8a6;
+        }
+
+        .alert-content strong {
+            color: #0f766e;
+            font-size: 1rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .alert-content p {
+            color: #065f46;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        /* Horarios Container */
+        .horarios-container {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .horarios-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .horarios-header h3 {
+            color: #1e293b;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 6px 0;
+        }
+
+        .horarios-header p {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        /* Grid de Horarios */
+        .horarios-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        /* Card de Horario */
+        .horario-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .horario-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #14b8a6, #0d9488);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .horario-card:hover {
+            border-color: #14b8a6;
+            box-shadow: 0 8px 24px rgba(20, 184, 166, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .horario-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .horario-header-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .horario-fecha-hora {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .horario-fecha {
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            min-width: 70px;
+            text-align: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 8px rgba(20, 184, 166, 0.3);
+        }
+
+        .horario-dia {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .horario-mes {
+            display: block;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            opacity: 0.95;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .horario-hora {
+            color: #1e293b;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .horario-hora i {
+            color: #14b8a6;
+            font-size: 1rem;
+        }
+
+        /* Información del Servicio */
+        .horario-servicio-section {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #14b8a6;
+        }
+
+        .horario-tipo {
+            color: #1e293b;
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .horario-tipo i {
+            color: #14b8a6;
+            font-size: 1rem;
+        }
+        
+        .horario-servicio-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .horario-precio {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .horario-precio i {
+            color: #10b981;
+            font-size: 1rem;
+        }
+        
+        .precio-label {
+            color: #64748b;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        
+        .precio-valor {
+            color: #10b981;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .horario-duracion {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+        
+        .horario-duracion i {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        /* Información del Dentista */
+        .horario-dentista-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dentist-photo-mini {
+            flex-shrink: 0;
+        }
+
+        .dentist-photo-mini img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #14b8a6;
+            box-shadow: 0 4px 8px rgba(20, 184, 166, 0.2);
+        }
+
+        .dentist-details-mini {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dentist-nombre-mini {
+            color: #1e293b;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dentist-nombre-mini i {
+            color: #14b8a6;
+            font-size: 0.875rem;
+        }
+
+        .dentist-especialidad-mini {
+            color: #64748b;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .dentist-especialidad-mini i {
+            color: #14b8a6;
+            font-size: 0.75rem;
+        }
+
+        .horario-dentista-sin-asignar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: #fef3c7;
+            border-radius: 8px;
+            color: #92400e;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .horario-dentista-sin-asignar i {
+            color: #f59e0b;
+        }
+
+        .btn-reservar-mini {
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(20, 184, 166, 0.3);
+            margin-top: auto;
+        }
+
+        .btn-reservar-mini:hover {
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(20, 184, 166, 0.4);
+        }
+
+        .btn-reservar-mini i {
+            font-size: 1rem;
+        }
+
+        /* Sección Bloqueada */
+        .blocked-section {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border: 2px solid #14b8a6;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .blocked-section i {
+            font-size: 3rem;
+            color: #14b8a6;
+            margin-bottom: 16px;
+        }
+
+        .blocked-section h4 {
+            color: #0f766e;
+            margin-bottom: 12px;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .blocked-section p {
+            color: #065f46;
+            font-size: 1rem;
+            margin: 8px 0;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+
+        .blocked-section a {
+            color: #14b8a6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .blocked-section a:hover {
+            text-decoration: underline;
+        }
+
+        /* No Horarios */
+        .no-horarios {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+
+        .no-horarios i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .no-horarios p {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        /* Quick actions */
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quick-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            font-size: 0.9375rem;
+        }
+
+        .quick-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #475569;
+        }
+
+        /* Modales */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+            padding: 20px 24px;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 1.2rem;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .warning-box i {
+            color: #f59e0b;
+            font-size: 1.5rem;
+            margin-top: 2px;
+        }
+
+        .warning-box p {
+            margin: 4px 0;
+            color: #78350f;
+            font-size: 0.9375rem;
+        }
+
+        .warning-box p strong {
+            font-weight: 600;
+        }
+
+        .cita-info-box, .dentist-info-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .cita-info-box h4, .dentist-info-box h4 {
+            margin: 0 0 16px 0;
+            color: #1e293b;
+            font-size: 1.125rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cita-info-box h4 i, .dentist-info-box h4 i {
+            color: #14b8a6;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #64748b;
+            font-size: 0.9375rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-label i {
+            color: #14b8a6;
+            width: 16px;
+        }
+
+        .info-value {
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 0.9375rem;
+        }
+
+        .dentist-card-modal {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .dentist-photo-modal {
+            flex-shrink: 0;
+        }
+
+        .dentist-photo-modal img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #14b8a6;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+        }
+
+        .dentist-details-modal {
+            flex-grow: 1;
+        }
+
+        .dentist-details-modal h5 {
+            margin: 0 0 8px 0;
+            color: #1e293b;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .dentist-especialidad {
+            color: #14b8a6;
+            font-weight: 500;
+            margin: 4px 0;
+            font-size: 0.9375rem;
+        }
+
+        .dentist-colegio {
+            color: #10b981;
+            margin: 4px 0;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dentist-colegio i {
+            color: #10b981;
+        }
+
+        .modal-footer {
+            padding: 20px 24px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-cancelar-modal {
+            background: white;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9375rem;
+        }
+
+        .btn-cancelar-modal:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .btn-confirmar-modal {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9375rem;
+        }
+
+        .btn-confirmar-modal:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .modal-logout .modal-header h3 i {
+            color: #14b8a6;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .filters-sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                max-height: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .horarios-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .horario-card {
+                padding: 16px;
+                gap: 12px;
+            }
+
+            .horario-fecha {
+                min-width: 60px;
+                padding: 12px;
+            }
+
+            .horario-dia {
+                font-size: 1.5rem;
+            }
+
+            .horario-hora {
+                font-size: 1.125rem;
+            }
+
+            .dentist-photo-mini img {
+                width: 60px;
+                height: 60px;
+            }
+
+            .btn-reservar-mini {
+                padding: 12px 20px;
+                font-size: 0.9375rem;
+            }
+
+            .filtro-actions {
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            .btn-filtrar, .btn-limpiar {
+                flex: 1;
+            }
+
+            .modal-content {
+                max-width: 95%;
+                margin: 10px;
+            }
+
+            .dentist-card-modal {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .modal-footer {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+
+            .btn-cancelar-modal,
+            .btn-confirmar-modal {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block main_layout %}
+    <div class="main-layout" style="display: flex; gap: 24px; max-width: 1400px; margin: 0 auto; padding: 20px; position: relative; z-index: 1;">
+        <!-- Sidebar de Filtros -->
+        <aside class="filters-sidebar">
+            <div class="filters-sidebar-header">
+                <h3>
+                    <i class="fas fa-filter"></i>
+                    Filtros
+                </h3>
+            </div>
+            <div class="filters-content">
+                <!-- Filtros -->
+                <div class="filtros-section">
+                    <form method="get" action="{% url 'panel_cliente' %}">
+                        <div class="filtros-grid">
+                            <div class="filtro-item">
+                                <label class="filtro-label">
+                                    <i class="fas fa-stethoscope"></i>
+                                    Tipo de cita
+                                </label>
+                                <select name="tipo_consulta" class="filtro-select" id="tipo_consulta">
+                                    <option value="">Todos los tipos</option>
+                                    {% if servicios_activos %}
+                                        {% for servicio in servicios_activos %}
+                                            <option value="{{ servicio.id }}" {% if request.GET.tipo_consulta == servicio.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ servicio.nombre }}
+                                            </option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="" disabled>Sin servicios disponibles</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="filtro-item">
+                                <label class="filtro-label">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Fecha
+                                </label>
+                                <input type="date" name="fecha" class="filtro-input" value="{{ request.GET.fecha }}">
+                            </div>
+                            <div class="filtro-item">
+                                <label class="filtro-label">
+                                    <i class="fas fa-user-md"></i>
+                                    Dentista
+                                </label>
+                                <select name="dentista_id" class="filtro-select" id="dentista_id">
+                                    <option value="">Todos los dentistas</option>
+                                    {% for dentista in dentistas_disponibles %}
+                                    <option value="{{ dentista.id }}" {% if dentista.id|stringformat:"s" == request.GET.dentista_id %}selected{% endif %}>
+                                        Dr(a). {{ dentista.nombre_completo }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filtro-actions">
+                            <button type="submit" class="btn-filtrar">
+                                <i class="fas fa-search"></i>
+                                Buscar citas
+                            </button>
+                            <a href="{% url 'panel_cliente' %}" class="btn-limpiar">
+                                <i class="fas fa-times"></i>
+                                Limpiar filtros
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Mapa de Ubicación -->
+                <div class="mapa-section">
+                    <h4 class="mapa-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Ubicación
+                    </h4>
+                    <div class="mapa-container">
+                        <iframe
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3153.83543450904!2d-72.333565!3d-38.2356192!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x966b155a8306e093%3A0x46de06dfbc92e29d!2sCl%C3%ADnica%20San%20Felipe!5e0!3m2!1ses!2scl!4v1733265600000!5m2!1ses!2scl"
+                            allowfullscreen=""
+                            loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade"
+                            title="Ubicación de Clínica San Felipe">
+                        </iframe>
+                        <div style="margin-top: 8px;">
+                            <a href="https://www.google.com/maps/place/Clinica+San+Felipe/@-38.2356192,-72.3361399,17z/data=!3m1!4b1!4m6!3m5!1s0x966b155a8306e093:0x46de06dfbc92e29d!8m2!3d-38.2356192!4d-72.333565!16s%2Fg%2F11sswz76yt?hl=es&entry=ttu" target="_blank" rel="noopener noreferrer" style="color: #14b8a6; text-decoration: none; font-size: 0.875rem; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-external-link-alt"></i>
+                                Ver en Google Maps
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mapa-info">
+                        <p>
+                            <i class="fas fa-map-marker-alt"></i>
+                            <strong>Clínica San Felipe</strong>
+                        </p>
+                        <p>
+                            <i class="fas fa-location-dot"></i>
+                            {% if CLINIC_ADDRESS %}{{ CLINIC_ADDRESS }}{% else %}Victoria, Región de la Araucanía{% endif %}
+                        </p>
+                        {% if telefono_clinica %}
+                        <p>
+                            <i class="fas fa-phone"></i>
+                            <a href="tel:{{ telefono_clinica }}" style="color: #14b8a6; text-decoration: none;">{{ telefono_clinica }}</a>
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <div class="container" style="flex: 1; min-width: 0; position: relative; z-index: 1;">
+            <div class="header">
+                <h2>
+                    <i class="fas fa-calendar"></i>
+                    Panel de Reservas
+                </h2>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {% if perfil_usuario and perfil_usuario.nombre_completo %}
+                            {{ perfil_usuario.nombre_completo|first|upper }}
+                        {% else %}
+                            {{ user.username|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="user-details">
+                        <h3>
+                            {% if perfil_usuario and perfil_usuario.nombre_completo %}
+                                {{ perfil_usuario.nombre_completo }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </h3>
+                        <p>Cliente</p>
+                    </div>
+                    <button class="menu-toggle-btn" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                        Menú
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                <div class="messages" style="margin-bottom: 25px;">
+                    {% for message in messages %}
+                        <div class="message {{ message.tags }}" style="padding: 12px 18px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-weight: 500; animation: slideIn 0.3s ease; font-size: 0.9rem;">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle"></i>
+                            {% elif message.tags == 'error' %}
+                                <i class="fas fa-exclamation-circle"></i>
+                            {% endif %}
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Alerta si ya tiene cita -->
+            {% if citas_reservadas.count > 0 %}
+            <div class="alert-banner">
+                <div class="alert-content">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>Tienes una cita activa</strong>
+                        <p style="margin-top: 8px;">
+                            Puedes ver la información de tu cita en el apartado <strong>"Mis Citas Activas"</strong> del menú lateral.
+                            <br>
+                            Si deseas cancelar tu cita, por favor contáctanos al número celular: <strong><a href="tel:{{ telefono_clinica }}" style="color: #14b8a6; text-decoration: none;">{{ telefono_clinica }}</a></strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Sección Principal: Horarios Disponibles -->
+            <div class="horarios-container">
+                <div class="horarios-header">
+                    <div>
+                        <h3>Horarios Disponibles</h3>
+                        <p>{{ citas.count }} horarios disponibles</p>
+                    </div>
+                </div>
+
+                {% if citas_reservadas.count > 0 %}
+                    <div class="blocked-section">
+                        <i class="fas fa-info-circle"></i>
+                        <h4>Ya tienes una cita activa</h4>
+                        <p>
+                            Puedes ver la información de tu cita en el apartado <strong>"Mis Citas Activas"</strong> del menú lateral.
+                        </p>
+                        <p>
+                            Si deseas cancelar tu cita, por favor contáctanos al número celular: 
+                            <strong><a href="tel:{{ telefono_clinica }}">{{ telefono_clinica }}</a></strong>
+                        </p>
+                    </div>
+                {% else %}
+                    {% if citas %}
+                        <div class="horarios-grid">
+                            {% for cita in citas %}
+                                <div class="horario-card">
+                                    <!-- Header: Fecha y Hora -->
+                                    <div class="horario-header-inner">
+                                        <div class="horario-fecha-hora">
+                                            <div class="horario-fecha">
+                                                <span class="horario-dia">{{ cita.fecha_hora|date:"d" }}</span>
+                                                <span class="horario-mes">{{ cita.fecha_hora|date:"M"|upper }}</span>
+                                            </div>
+                                            <div class="horario-hora">
+                                                <i class="fas fa-clock"></i>
+                                                {{ cita.fecha_hora|time:"H:i" }} hrs
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Servicio y Precio -->
+                                    <div class="horario-servicio-section">
+                                        <div class="horario-tipo">
+                                            <i class="fas fa-stethoscope"></i>
+                                            {% if cita.servicio_info %}
+                                                {{ cita.servicio_info.nombre }}
+                                            {% else %}
+                                                {{ cita.tipo_consulta|default:"Consulta general" }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="horario-servicio-info">
+                                            {% if cita.servicio_info %}
+                                                {% if cita.servicio_info.precio_cobrado_formateado or cita.servicio_info.precio_formateado %}
+                                                <div class="horario-precio">
+                                                    <i class="fas fa-dollar-sign"></i>
+                                                    <span class="precio-label">Precio:</span>
+                                                    <span class="precio-valor">
+                                                        {% if cita.servicio_info.precio_cobrado_formateado %}
+                                                            {{ cita.servicio_info.precio_cobrado_formateado }}
+                                                        {% else %}
+                                                            {{ cita.servicio_info.precio_formateado }}
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                                {% endif %}
+                                                {% if cita.servicio_info.duracion_estimada %}
+                                                <div class="horario-duracion">
+                                                    <i class="fas fa-hourglass-half"></i>
+                                                    {{ cita.servicio_info.duracion_estimada }} min
+                                                </div>
+                                                {% endif %}
+                                            {% elif cita.precio_cobrado %}
+                                                <div class="horario-precio">
+                                                    <i class="fas fa-dollar-sign"></i>
+                                                    <span class="precio-label">Precio:</span>
+                                                    <span class="precio-valor">
+                                                        ${{ cita.precio_cobrado|floatformat:0 }}
+                                                    </span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Dentista -->
+                                    {% if cita.dentista_info %}
+                                    <div class="horario-dentista-section">
+                                        <div class="dentist-photo-mini">
+                                            {% if cita.dentista_info.foto %}
+                                            {% with iniciales=cita.dentista_info.nombre|slice:":2"|upper %}
+                                            <img src="{{ cita.dentista_info.foto }}" alt="Dr(a). {{ cita.dentista_info.nombre }}" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ iniciales }}&background=3b82f6&color=fff&size=160&bold=true'">
+                                            {% endwith %}
+                                            {% else %}
+                                            {% with iniciales=cita.dentista_info.nombre|slice:":2"|upper %}
+                                            <img src="https://ui-avatars.com/api/?name={{ iniciales }}&background=3b82f6&color=fff&size=160&bold=true" alt="Dr(a). {{ cita.dentista_info.nombre }}">
+                                            {% endwith %}
+                                            {% endif %}
+                                        </div>
+                                        <div class="dentist-details-mini">
+                                            <div class="dentist-nombre-mini">
+                                                <i class="fas fa-user-md"></i>
+                                                Dr(a). {{ cita.dentista_info.nombre }}
+                                            </div>
+                                            {% if cita.dentista_info.especialidad %}
+                                            <div class="dentist-especialidad-mini">
+                                                <i class="fas fa-graduation-cap"></i>
+                                                {{ cita.dentista_info.especialidad }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="horario-dentista-sin-asignar">
+                                        <i class="fas fa-user-md"></i>
+                                        <span>Dentista por asignar</span>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Botón Reservar -->
+                                    <button type="button" class="btn-reservar-mini btn-reservar-cita" 
+                                            data-cita-id="{{ cita.id }}"
+                                            data-cita-fecha="{{ cita.fecha_hora|date:'d/m/Y' }}"
+                                            data-cita-hora="{{ cita.fecha_hora|time:'H:i' }}"
+                                            data-cita-tipo="{% if cita.servicio_info %}{{ cita.servicio_info.nombre }}{% else %}{{ cita.tipo_consulta|default:'Consulta general' }}{% endif %}"
+                                            {% if cita.servicio_info %}
+                                            data-servicio-nombre="{{ cita.servicio_info.nombre }}"
+                                            data-servicio-precio="{% if cita.servicio_info.precio_cobrado_formateado %}{{ cita.servicio_info.precio_cobrado_formateado }}{% elif cita.servicio_info.precio_formateado %}{{ cita.servicio_info.precio_formateado }}{% endif %}"
+                                            data-servicio-duracion="{{ cita.servicio_info.duracion_estimada|default:'' }}"
+                                            {% endif %}
+                                            {% if cita.dentista_info %}
+                                            data-dentista-nombre="{{ cita.dentista_info.nombre }}"
+                                            data-dentista-especialidad="{{ cita.dentista_info.especialidad }}"
+                                            data-dentista-foto="{{ cita.dentista_info.foto|default:'' }}"
+                                            data-dentista-colegio="{{ cita.dentista_info.numero_colegio|default:'N/A' }}"
+                                            {% endif %}>
+                                        <i class="fas fa-calendar-check"></i>
+                                        Reservar Cita
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="no-horarios">
+                            <i class="fas fa-calendar-times"></i>
+                            <p>No hay horarios disponibles</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="quick-btn" onclick="window.location.reload()">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualizar
+                </button>
+                <button class="quick-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+                    <i class="fas fa-arrow-up"></i>
+                    Subir
+                </button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Modal de Confirmación de Reserva -->
+    <div class="modal-overlay" id="modalConfirmacion" onclick="if (event.target === this) cerrarModalConfirmacion(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Confirmar Reserva de Cita
+                </h3>
+                <button class="modal-close" onclick="cerrarModalConfirmacion()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="warning-box">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <p><strong>¿Estás seguro de que quieres reservar esta cita?</strong></p>
+                        <p>Una vez confirmada, recibirás la información de confirmación por correo electrónico.</p>
+                    </div>
+                </div>
+
+                <div class="cita-info-box">
+                    <h4><i class="fas fa-calendar-check"></i> Información de la Cita</h4>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-calendar"></i> Fecha:</span>
+                        <span class="info-value" id="modal-fecha"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-clock"></i> Hora:</span>
+                        <span class="info-value" id="modal-hora"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-stethoscope"></i> Tipo de Consulta:</span>
+                        <span class="info-value" id="modal-tipo"></span>
+                    </div>
+                    <div class="info-item" id="modal-servicio-item" style="display: none;">
+                        <span class="info-label"><i class="fas fa-tag"></i> Tipo de Servicio:</span>
+                        <span class="info-value" id="modal-servicio"></span>
+                    </div>
+                    <div class="info-item" id="modal-precio-item" style="display: none;">
+                        <span class="info-label"><i class="fas fa-dollar-sign"></i> Precio:</span>
+                        <span class="info-value" id="modal-precio" style="color: #10b981; font-weight: 700;"></span>
+                    </div>
+                </div>
+
+                <div class="dentist-info-box" id="dentist-info-box">
+                    <h4><i class="fas fa-user-md"></i> Tu Dentista</h4>
+                    <div class="dentist-card-modal">
+                        <div class="dentist-photo-modal">
+                            <img id="dentist-foto" src="" alt="Dentista" onerror="this.src='https://ui-avatars.com/api/?name=DT&background=3b82f6&color=fff&size=200&bold=true'">
+                        </div>
+                        <div class="dentist-details-modal">
+                            <h5 id="dentist-nombre">-</h5>
+                            <p class="dentist-especialidad" id="dentist-especialidad">-</p>
+                            <p class="dentist-colegio" id="dentist-colegio">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <form method="post" action="" id="form-reservar" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="button" class="btn-cancelar-modal" onclick="cerrarModalConfirmacion()">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-confirmar-modal">
+                        <i class="fas fa-check"></i>
+                        Sí, Confirmar Reserva
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Logout -->
+    <div class="modal-overlay" id="modalLogout" onclick="cerrarModalLogout()">
+        <div class="modal-content modal-logout" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-sign-out-alt"></i>
+                    Cerrar Sesión
+                </h3>
+                <button class="modal-close" onclick="cerrarModalLogout()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="warning-box" style="background: linear-gradient(135deg, #f0fdfa, #e0f2f1); border-left: 4px solid #14b8a6;">
+                    <i class="fas fa-info-circle" style="color: #14b8a6;"></i>
+                    <div>
+                        <p><strong>¿Estás seguro de que quieres cerrar sesión?</strong></p>
+                        <p>Podrás iniciar sesión nuevamente cuando lo desees.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-cancelar-modal" onclick="cerrarModalLogout()">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn-confirmar-modal" onclick="confirmarLogout()" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sí, Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Mantener el valor seleccionado después de filtrar
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tipoConsulta = urlParams.get('tipo_consulta');
+            if (tipoConsulta) {
+                const select = document.getElementById('tipo_consulta');
+                if (select) select.value = tipoConsulta;
+            }
+            const fecha = urlParams.get('fecha');
+            if (fecha) {
+                const input = document.querySelector('input[name="fecha"]');
+                if (input) input.value = fecha;
+            }
+            const dentistaId = urlParams.get('dentista_id');
+            if (dentistaId) {
+                const select = document.getElementById('dentista_id');
+                if (select) select.value = dentistaId;
+            }
+
+            // Auto-hide messages after 4 seconds
+            setTimeout(function() {
+                const messages = document.querySelectorAll('.message');
+                messages.forEach(function(message) {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-20px)';
+                    setTimeout(function() {
+                        message.remove();
+                    }, 300);
+                });
+            }, 4000);
+        });
+
+        // Add loading state to buttons
+        document.querySelectorAll('form').forEach(function(form) {
+            form.addEventListener('submit', function() {
+                const button = form.querySelector('button[type="submit"]');
+                if (button) {
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<span class="loading"></span> Procesando...';
+                    button.disabled = true;
+                    
+                    // Re-enable button after 3 seconds if form doesn't submit
+                    setTimeout(function() {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }, 3000);
+                }
+            });
+        });
+
+        // Modal de Logout
+        function abrirModalLogout(e) {
+            e.preventDefault();
+            const modal = document.getElementById('modalLogout');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function cerrarModalLogout() {
+            const modal = document.getElementById('modalLogout');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function confirmarLogout() {
+            window.location.href = '{% url "logout_cliente" %}';
+        }
+
+        // Funciones del Modal de Confirmación
+        function abrirModalConfirmacion(buttonElement) {
+            const button = buttonElement;
+            
+            if (!button) {
+                console.error('Error: Botón no encontrado');
+                return;
+            }
+            
+            const modal = document.getElementById('modalConfirmacion');
+            const form = document.getElementById('form-reservar');
+            
+            if (!modal) {
+                console.error('Error: Modal no encontrado (id: modalConfirmacion)');
+                return;
+            }
+            
+            if (!form) {
+                console.error('Error: Formulario no encontrado (id: form-reservar)');
+                return;
+            }
+            
+            // Obtener información de la cita desde data attributes
+            const citaId = button.getAttribute('data-cita-id');
+            const fecha = button.getAttribute('data-cita-fecha') || '';
+            const hora = button.getAttribute('data-cita-hora') || '';
+            const tipo = button.getAttribute('data-cita-tipo') || '';
+            
+            if (!citaId) {
+                console.error('Error: No se encontró el ID de la cita');
+                return;
+            }
+            
+            // Actualizar información de la cita con verificaciones
+            const modalFecha = document.getElementById('modal-fecha');
+            const modalHora = document.getElementById('modal-hora');
+            const modalTipo = document.getElementById('modal-tipo');
+            
+            if (modalFecha) modalFecha.textContent = fecha;
+            if (modalHora) modalHora.textContent = hora;
+            if (modalTipo) modalTipo.textContent = tipo;
+            
+            // Actualizar información del servicio si existe
+            const servicioNombre = button.getAttribute('data-servicio-nombre');
+            const servicioPrecio = button.getAttribute('data-servicio-precio');
+            const servicioDuracion = button.getAttribute('data-servicio-duracion');
+            
+            const servicioItem = document.getElementById('modal-servicio-item');
+            const precioItem = document.getElementById('modal-precio-item');
+            const modalServicio = document.getElementById('modal-servicio');
+            const modalPrecio = document.getElementById('modal-precio');
+            
+            if (servicioNombre && servicioItem && modalServicio) {
+                servicioItem.style.display = 'flex';
+                modalServicio.textContent = servicioNombre;
+                
+                if (servicioPrecio && precioItem && modalPrecio) {
+                    precioItem.style.display = 'flex';
+                    modalPrecio.textContent = servicioPrecio;
+                } else if (precioItem) {
+                    precioItem.style.display = 'none';
+                }
+            } else {
+                if (servicioItem) servicioItem.style.display = 'none';
+                if (precioItem) precioItem.style.display = 'none';
+            }
+            
+            // Obtener información del dentista desde data attributes
+            const dentistBox = document.getElementById('dentist-info-box');
+            const dentistNombre = document.getElementById('dentist-nombre');
+            const dentistEspecialidad = document.getElementById('dentist-especialidad');
+            const dentistColegio = document.getElementById('dentist-colegio');
+            const fotoImg = document.getElementById('dentist-foto');
+            
+            if (dentistBox && dentistNombre && dentistEspecialidad && dentistColegio && fotoImg) {
+                if (button.hasAttribute('data-dentista-nombre')) {
+                    const nombre = button.getAttribute('data-dentista-nombre') || '';
+                    const especialidad = button.getAttribute('data-dentista-especialidad') || 'Odontología General';
+                    const foto = button.getAttribute('data-dentista-foto') || '';
+                    const colegio = button.getAttribute('data-dentista-colegio') || 'N/A';
+                    
+                    dentistBox.style.display = 'block';
+                    dentistNombre.textContent = 'Dr(a). ' + nombre;
+                    dentistEspecialidad.textContent = especialidad;
+                    dentistColegio.innerHTML = '<i class="fas fa-id-card"></i> Colegio: ' + colegio;
+                    
+                    // Foto del dentista
+                    if (foto) {
+                        fotoImg.src = foto;
+                    } else {
+                        // Generar placeholder con iniciales
+                        const iniciales = nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                        fotoImg.src = `https://ui-avatars.com/api/?name=${iniciales}&background=3b82f6&color=fff&size=200&bold=true`;
+                    }
+                } else {
+                    dentistBox.style.display = 'block';
+                    dentistNombre.textContent = 'Dentista por asignar';
+                    dentistEspecialidad.textContent = 'Se asignará al confirmar la cita';
+                    dentistColegio.innerHTML = '-';
+                    fotoImg.src = 'https://ui-avatars.com/api/?name=DT&background=3b82f6&color=fff&size=200&bold=true';
+                }
+            }
+            
+            // Actualizar action del form
+            form.action = `/reservas/reservar/${citaId}/`;
+            
+            // Mostrar modal
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Handler simplificado para reservar cita usando confirm nativo con mensaje detallado
+        function reservarCitaHandler(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const button = e.currentTarget || e.target.closest('.btn-reservar-cita');
+            if (!button) return;
+            
+            const citaId = button.getAttribute('data-cita-id');
+            if (!citaId) {
+                alert('Error: No se encontró el ID de la cita. Por favor, recarga la página e intenta nuevamente.');
+                return;
+            }
+            
+            // Obtener toda la información de la cita
+            const fecha = button.getAttribute('data-cita-fecha') || 'No especificada';
+            const hora = button.getAttribute('data-cita-hora') || 'No especificada';
+            const tipo = button.getAttribute('data-cita-tipo') || 'Consulta general';
+            const servicioNombre = button.getAttribute('data-servicio-nombre');
+            const servicioPrecio = button.getAttribute('data-servicio-precio');
+            const servicioDuracion = button.getAttribute('data-servicio-duracion');
+            const dentistaNombre = button.getAttribute('data-dentista-nombre');
+            const dentistaEspecialidad = button.getAttribute('data-dentista-especialidad');
+            
+            // Construir mensaje detallado de confirmación
+            let mensaje = '═══════════════════════════════════════\n';
+            mensaje += '   CONFIRMACIÓN DE RESERVA DE CITA\n';
+            mensaje += '═══════════════════════════════════════\n\n';
+            mensaje += '¿Confirmas la reserva de esta cita?\n\n';
+            mensaje += '📅 FECHA: ' + fecha + '\n';
+            mensaje += '🕐 HORA: ' + hora + '\n';
+            mensaje += '🏥 TIPO DE CONSULTA: ' + tipo + '\n';
+            
+            if (servicioNombre) {
+                mensaje += '🦷 SERVICIO: ' + servicioNombre + '\n';
+            }
+            
+            if (servicioPrecio) {
+                mensaje += '💰 PRECIO: ' + servicioPrecio + '\n';
+            }
+            
+            if (servicioDuracion) {
+                mensaje += '⏱️ DURACIÓN ESTIMADA: ' + servicioDuracion + ' minutos\n';
+            }
+            
+            if (dentistaNombre) {
+                mensaje += '👨‍⚕️ DENTISTA: Dr(a). ' + dentistaNombre + '\n';
+                if (dentistaEspecialidad) {
+                    mensaje += '   Especialidad: ' + dentistaEspecialidad + '\n';
+                }
+            } else {
+                mensaje += '👨‍⚕️ DENTISTA: Por asignar\n';
+                mensaje += '   (Se asignará al confirmar la cita)\n';
+            }
+            
+            mensaje += '\n═══════════════════════════════════════\n';
+            mensaje += 'IMPORTANTE:\n';
+            mensaje += '• Una vez confirmada, recibirás un correo\n';
+            mensaje += '  electrónico con los detalles de tu cita.\n';
+            mensaje += '• Por favor, revisa tu correo después de\n';
+            mensaje += '  confirmar la reserva.\n';
+            mensaje += '═══════════════════════════════════════\n';
+            
+            // Mostrar confirmación nativa con mensaje detallado
+            if (window.confirm(mensaje)) {
+                // Crear un formulario para enviar POST
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/reservas/reservar/' + citaId + '/';
+                
+                // Agregar token CSRF
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (csrfToken) {
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = csrfToken.value;
+                    form.appendChild(csrfInput);
+                } else {
+                    // Intentar obtener el token de las cookies
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.startsWith('csrftoken=')) {
+                            const csrfInput = document.createElement('input');
+                            csrfInput.type = 'hidden';
+                            csrfInput.name = 'csrfmiddlewaretoken';
+                            csrfInput.value = cookie.substring('csrftoken='.length);
+                            form.appendChild(csrfInput);
+                            break;
+                        }
+                    }
+                }
+                
+                // Agregar el formulario al body y enviarlo
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        // Inicializar botones de reservar - versión simplificada
+        function inicializarBotonesReservar() {
+            const botones = document.querySelectorAll('.btn-reservar-cita');
+            botones.forEach(function(button) {
+                button.removeEventListener('click', reservarCitaHandler);
+                button.addEventListener('click', reservarCitaHandler);
+            });
+        }
+        
+        // Inicializar cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializarBotonesReservar);
+        } else {
+            inicializarBotonesReservar();
+        }
+    </script>
+{% endblock %}

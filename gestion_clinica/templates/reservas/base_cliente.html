@@ -1,0 +1,671 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Clínica San Felipe{% endblock %}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        .main-layout {
+            display: flex;
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .container {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .header { 
+            background: white;
+            padding: 24px 32px;
+            border-radius: 16px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h2 { 
+            color: #1e293b;
+            font-size: 2rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+        }
+        
+        .header h2 i {
+            color: #14b8a6;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #14b8a6, #0f766e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(20, 184, 166, 0.3);
+        }
+
+        .user-details h3 {
+            margin: 0;
+            color: #1e293b;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .user-details p {
+            margin: 2px 0 0 0;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .menu-toggle-btn {
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+        }
+
+        .menu-toggle-btn:hover {
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-volver {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin-bottom: 20px;
+        }
+
+        .btn-volver:hover {
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+        }
+
+        /* Estilos comunes reutilizables */
+        .stats-card, .stats-grid {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 25px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .stats-label {
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .empty-state, .no-fichas, .no-radiografias {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .empty-state i, .no-fichas i, .no-radiografias i {
+            font-size: 4rem;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3, .no-fichas p:first-of-type, .no-radiografias p:first-of-type {
+            font-weight: 600;
+            color: #475569;
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p, .no-fichas p, .no-radiografias p {
+            margin: 8px 0;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #14b8a6, #0d9488);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #14b8a6;
+            border: 2px solid #14b8a6;
+        }
+
+        .btn-secondary:hover {
+            background: #14b8a6;
+            color: white;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-pendiente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-firmado, .badge-aceptado {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-rechazado {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            max-width: 90vw;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.active {
+            right: 0;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, #14b8a6, #0f766e);
+            color: white;
+            padding: 30px 24px;
+            position: relative;
+        }
+
+        .sidebar-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .sidebar-user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .sidebar-avatar {
+            width: 60px;
+            height: 60px;
+            background: white;
+            color: #14b8a6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-user-details h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .sidebar-user-details p {
+            margin: 5px 0 0 0;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .sidebar-content {
+            padding: 0;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu-item {
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .sidebar-menu-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px 24px;
+            color: #1e293b;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .sidebar-menu-link:hover {
+            background: #f8fafc;
+            color: #14b8a6;
+            padding-left: 32px;
+        }
+
+        .sidebar-menu-link i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .sidebar-menu-link:hover i {
+            color: #14b8a6;
+        }
+
+        .sidebar-menu-link .badge {
+            margin-left: auto;
+            background: #14b8a6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .sidebar-contact {
+            padding: 20px 24px;
+            border-top: 1px solid #f1f5f9;
+            background: #f0fdfa;
+        }
+
+        .sidebar-contact-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #0f766e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-contact-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: #0f766e;
+            font-weight: 500;
+        }
+
+        .sidebar-contact-item i {
+            color: #14b8a6;
+            width: 16px;
+        }
+
+        .sidebar-logout {
+            padding: 20px 24px;
+            border-top: 1px solid #f1f5f9;
+            background: #fff;
+        }
+
+        .sidebar-logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .sidebar-logout-btn:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .sidebar-logout-btn i {
+            font-size: 1.125rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                flex-direction: column;
+                padding: 15px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h2 {
+                font-size: 1.5rem;
+            }
+
+            .content-card {
+                padding: 20px;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% block main_layout %}
+    <div class="main-layout">
+        <div class="container">
+            <div class="header">
+                <h2>
+                    {% block header_icon %}<i class="fas fa-calendar"></i>{% endblock %}
+                    {% block header_title %}Panel de Reservas{% endblock %}
+                </h2>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {% if perfil_usuario and perfil_usuario.nombre_completo %}
+                            {{ perfil_usuario.nombre_completo|first|upper }}
+                        {% else %}
+                            {{ user.username|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="user-details">
+                        <h3>
+                            {% if perfil_usuario and perfil_usuario.nombre_completo %}
+                                {{ perfil_usuario.nombre_completo }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </h3>
+                        <p>Cliente</p>
+                    </div>
+                    <button class="menu-toggle-btn" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                        Menú
+                    </button>
+                </div>
+            </div>
+
+            <div class="content-card">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="sidebar-close" onclick="closeSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="sidebar-user-info">
+                <div class="sidebar-avatar">
+                    {% if perfil_usuario and perfil_usuario.nombre_completo %}
+                        {{ perfil_usuario.nombre_completo|first|upper }}
+                    {% else %}
+                        {{ user.username|first|upper }}
+                    {% endif %}
+                </div>
+                <div class="sidebar-user-details">
+                    <h3>
+                        {% if perfil_usuario and perfil_usuario.nombre_completo %}
+                            {{ perfil_usuario.nombre_completo }}
+                        {% else %}
+                            {{ user.username }}
+                        {% endif %}
+                    </h3>
+                    <p>
+                        {% if perfil_usuario and perfil_usuario.email %}
+                            {{ perfil_usuario.email }}
+                        {% else %}
+                            {{ user.email }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-content">
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'panel_cliente' %}" class="sidebar-menu-link">
+                        <i class="fas fa-home"></i>
+                        <span>Panel Principal</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'mi_perfil_cliente' %}" class="sidebar-menu-link">
+                        <i class="fas fa-user"></i>
+                        <span>Mi Perfil</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'mis_citas_activas' %}" class="sidebar-menu-link">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Mis Citas Activas</span>
+                        {% if citas_reservadas and citas_reservadas.count > 0 %}
+                        <span class="badge">{{ citas_reservadas.count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'historial_citas' %}" class="sidebar-menu-link">
+                        <i class="fas fa-history"></i>
+                        <span>Historial de Citas</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'ver_odontogramas' %}" class="sidebar-menu-link">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>Mis Fichas</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'ver_consentimientos' %}" class="sidebar-menu-link">
+                        <i class="fas fa-file-signature"></i>
+                        <span>Consentimientos</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'ver_tratamientos' %}" class="sidebar-menu-link">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Mis Tratamientos</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item">
+                    <a href="{% url 'ayuda' %}" class="sidebar-menu-link">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Ayuda</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-contact">
+                <div class="sidebar-contact-title">
+                    <i class="fas fa-question-circle"></i>
+                    ¿Necesitas contactarte con nosotros?
+                </div>
+                <div class="sidebar-contact-item">
+                    <i class="fas fa-phone"></i>
+                    <span>+56 9 2678 6544</span>
+                </div>
+            </div>
+
+            <div class="sidebar-logout">
+                <a href="{% url 'logout_cliente' %}" class="sidebar-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSidebar();
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
