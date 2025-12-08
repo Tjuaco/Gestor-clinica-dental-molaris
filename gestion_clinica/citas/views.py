@@ -133,7 +133,13 @@ class TrabajadorLoginView(LoginView):
     template_name = 'citas/auth/login.html'
     
     def dispatch(self, *args, **kwargs):
-        """Aplicar protección de rate limiting"""
+        """Aplicar protección de rate limiting y permitir múltiples sesiones"""
+        # Si hay una sesión activa, cerrarla para permitir login con otro usuario
+        # Esto permite tener múltiples pestañas con diferentes usuarios
+        if self.request.user.is_authenticated:
+            from django.contrib.auth import logout
+            logout(self.request)
+        
         # Obtener IP del cliente
         ip_address = self.get_client_ip()
         
