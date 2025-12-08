@@ -29,8 +29,10 @@ class ClienteActivoMiddleware:
     
     def __call__(self, request):
         # Solo verificar si el usuario está autenticado y no está en rutas exentas
+        # IMPORTANTE: También excluir rutas de trabajadores para no afectar a dentistas/administradores
         if (request.user.is_authenticated and 
-            not any(request.path.startswith(path) for path in self.exempt_paths)):
+            not any(request.path.startswith(path) for path in self.exempt_paths) and
+            not request.path.startswith('/trabajadores/')):
             
             try:
                 from .models import PerfilCliente
@@ -61,11 +63,9 @@ class ClienteActivoMiddleware:
                     # En caso de error, permitir continuar para no bloquear a todos los usuarios
                     
             except PerfilCliente.DoesNotExist:
-                # Si no tiene perfil, no es un cliente válido
-                logger.warning(f"Usuario {request.user.username} no tiene PerfilCliente, cerrando sesión")
-                logout(request)
-                messages.error(request, 'Tu cuenta no está configurada correctamente. Por favor, contacta al administrador.')
-                return redirect('login_cliente')
+                # Si no tiene PerfilCliente, puede ser un trabajador (dentista/administrador)
+                # NO hacer nada, permitir que continúe (el middleware solo debe verificar clientes)
+                pass
         
         response = self.get_response(request)
         return response
