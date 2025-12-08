@@ -308,27 +308,6 @@
     }
 </style>
 
-<script>
-    // Event listener para el botón Mi Perfil en el Dashboard
-    document.addEventListener('DOMContentLoaded', function() {
-        const btnDashboard = document.getElementById('btnMiPerfilDashboard');
-        if (btnDashboard) {
-            btnDashboard.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (typeof abrirModalPerfil === 'function') {
-                    abrirModalPerfil();
-                } else {
-                    setTimeout(function() {
-                        if (typeof abrirModalPerfil === 'function') {
-                            abrirModalPerfil();
-                        }
-                    }, 100);
-                }
-            });
-        }
-    });
-</script>
 
 <div class="dashboard-wrapper">
     <!-- Header del Dashboard -->
@@ -360,10 +339,6 @@
             <a href="{% url 'ver_mi_horario' %}" class="quick-action-btn">
                 <i class="fas fa-clock"></i>
                 <span>Mi Horario</span>
-            </a>
-            <a href="javascript:void(0);" class="quick-action-btn" id="btnMiPerfilDashboard">
-                <i class="fas fa-user-circle"></i>
-                <span>Mi Perfil</span>
             </a>
         </div>
     </div>
