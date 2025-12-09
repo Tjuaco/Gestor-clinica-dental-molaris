@@ -6,103 +6,412 @@
 {% block page_title %}✏️ Editar Cita{% endblock %}
 
 {% block content %}
-<div class="section form-section">
-    <h2>{% if cita.estado == 'disponible' %}Editar Cita Disponible{% elif cita.estado == 'reservada' or cita.estado == 'confirmada' %}Editar Cita Reservada{% endif %}</h2>
-    
+<style>
+    .editar-cita-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .card-modern {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .alert-warning-modern {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border: 2px solid #f59e0b;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert-warning-modern i {
+        color: #d97706;
+        font-size: 1.25rem;
+    }
+
+    .alert-warning-modern p {
+        margin: 0;
+        color: #92400e;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .cliente-info-card {
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border: 2px solid #e2e8f0;
+        border-left: 4px solid var(--primary-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .cliente-info-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .cliente-info-header h3 {
+        margin: 0;
+        color: #1e293b;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .cliente-info-header i {
+        color: var(--primary-color);
+        font-size: 1.2rem;
+    }
+
+    .cliente-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .cliente-info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .cliente-info-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cliente-info-value {
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .form-modern {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        padding: 24px;
+    }
+
+    .form-row-modern {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group-modern {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group-modern.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-group-modern label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-group-modern label i {
+        color: var(--primary-color);
+        font-size: 1rem;
+    }
+
+    .form-control-modern {
+        width: 100%;
+        padding: 12px 14px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+        background: #f8fafc;
+        color: #1e293b;
+    }
+
+    .form-control-modern:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+    }
+
+    .form-control-modern textarea {
+        resize: vertical;
+        min-height: 80px;
+        font-family: inherit;
+    }
+
+    .form-help-text {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .form-help-text i {
+        color: var(--primary-color);
+        font-size: 0.75rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 2px solid #e5e7eb;
+    }
+
+    .btn-modern {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-primary-modern {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);
+    }
+
+    .btn-primary-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+    }
+
+    .btn-secondary-modern {
+        background: #f1f5f9;
+        color: #475569;
+        border: 2px solid #e2e8f0;
+    }
+
+    .btn-secondary-modern:hover {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    @media (max-width: 768px) {
+        .form-row-modern {
+            grid-template-columns: 1fr;
+        }
+
+        .cliente-info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn-modern {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="editar-cita-container">
     {% if cita.estado == 'reservada' or cita.estado == 'confirmada' %}
-    <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-        <p style="margin: 0; color: #92400e; font-weight: 600;">
-            <i class="fas fa-info-circle"></i> 
+    <div class="alert-warning-modern">
+        <i class="fas fa-info-circle"></i>
+        <p>
             <strong>Nota:</strong> Esta cita está reservada. No se puede modificar el cliente. Solo puede ajustar fecha/hora, dentista, servicio y precio.
         </p>
     </div>
     
     <!-- Información del Cliente (Solo lectura) -->
-    <div style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-        <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 16px; font-weight: 600;">
-            <i class="fas fa-user"></i> Cliente (No modificable)
-        </h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-            <div>
-                <label style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Nombre</label>
-                <p style="margin: 4px 0 0 0; color: #1e293b; font-weight: 600;">{{ cita.paciente_nombre|default:"Sin nombre" }}</p>
+    <div class="cliente-info-card">
+        <div class="cliente-info-header">
+            <i class="fas fa-user"></i>
+            <h3>Cliente (No modificable)</h3>
+        </div>
+        <div class="cliente-info-grid">
+            <div class="cliente-info-item">
+                <span class="cliente-info-label">Nombre</span>
+                <span class="cliente-info-value">{{ cita.paciente_nombre|default:"Sin nombre" }}</span>
             </div>
             {% if cita.paciente_email %}
-            <div>
-                <label style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Email</label>
-                <p style="margin: 4px 0 0 0; color: #1e293b;">{{ cita.paciente_email }}</p>
+            <div class="cliente-info-item">
+                <span class="cliente-info-label">Email</span>
+                <span class="cliente-info-value">{{ cita.paciente_email }}</span>
             </div>
             {% endif %}
             {% if cita.paciente_telefono %}
-            <div>
-                <label style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Teléfono</label>
-                <p style="margin: 4px 0 0 0; color: #1e293b;">{{ cita.paciente_telefono }}</p>
+            <div class="cliente-info-item">
+                <span class="cliente-info-label">Teléfono</span>
+                <span class="cliente-info-value">{{ cita.paciente_telefono }}</span>
             </div>
             {% endif %}
         </div>
     </div>
     {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-row">
-            <div class="form-group">
-                <label><strong>📅 Fecha y Hora:</strong></label>
-                <input type="datetime-local" name="fecha_hora" value="{{ cita.fecha_hora|date:'Y-m-d' }}T{{ cita.fecha_hora|time:'H:i' }}" required>
+
+    <div class="form-modern">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-row-modern">
+                <div class="form-group-modern">
+                    <label>
+                        <i class="fas fa-calendar-alt"></i>
+                        Fecha y Hora
+                    </label>
+                    <input 
+                        type="datetime-local" 
+                        name="fecha_hora" 
+                        value="{{ cita.fecha_hora|date:'Y-m-d' }}T{{ cita.fecha_hora|time:'H:i' }}" 
+                        required
+                        class="form-control-modern"
+                    >
+                </div>
+                
+                <div class="form-group-modern">
+                    <label>
+                        <i class="fas fa-tasks"></i>
+                        Tipo de Servicio
+                    </label>
+                    <select 
+                        name="tipo_servicio" 
+                        id="tipo_servicio_edit" 
+                        onchange="actualizarPrecioEditarCita()" 
+                        class="form-control-modern"
+                    >
+                        <option value="">-- Seleccionar Servicio --</option>
+                        {% if servicios %}
+                            {% regroup servicios by categoria as servicios_por_categoria %}
+                            {% for categoria_group in servicios_por_categoria %}
+                                <optgroup label="{{ categoria_group.grouper|title }}">
+                                    {% for servicio in categoria_group.list %}
+                                    <option value="{{ servicio.id }}" data-precio="{{ servicio.precio_base }}" {% if cita.tipo_servicio and cita.tipo_servicio.id == servicio.id %}selected{% endif %}>
+                                        {{ servicio.nombre }} - {{ servicio.precio_base|pesos_chilenos }}
+                                    </option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label><strong><i class="fas fa-tasks"></i> Tipo de Servicio:</strong></label>
-                <select name="tipo_servicio" id="tipo_servicio_edit" onchange="actualizarPrecioEditarCita()" class="form-control">
-                    <option value="">-- Seleccionar Servicio --</option>
-                    {% if servicios %}
-                        {% regroup servicios by categoria as servicios_por_categoria %}
-                        {% for categoria_group in servicios_por_categoria %}
-                            <optgroup label="{{ categoria_group.grouper|title }}">
-                                {% for servicio in categoria_group.list %}
-                                <option value="{{ servicio.id }}" data-precio="{{ servicio.precio_base }}" {% if cita.tipo_servicio and cita.tipo_servicio.id == servicio.id %}selected{% endif %}>
-                                    {{ servicio.nombre }} - {{ servicio.precio_base|pesos_chilenos }}
-                                </option>
-                                {% endfor %}
-                            </optgroup>
-                        {% endfor %}
-                    {% endif %}
+
+            <div class="form-row-modern">
+                <div class="form-group-modern" id="precio_container_edit_cita" style="display: {% if cita.precio_cobrado %}block{% else %}none{% endif %};">
+                    <label>
+                        <i class="fas fa-dollar-sign"></i>
+                        Precio Cobrado
+                    </label>
+                    <input 
+                        type="text" 
+                        inputmode="numeric" 
+                        pattern="[0-9.,]*" 
+                        name="precio_cobrado" 
+                        id="precio_cobrado_edit_cita" 
+                        value="{% if cita.precio_cobrado %}{{ cita.precio_cobrado|floatformat:0|stringformat:"d" }}{% endif %}" 
+                        placeholder="60.000" 
+                        class="form-control-modern formato-numero"
+                    >
+                    <span class="form-help-text">
+                        <i class="fas fa-info-circle"></i>
+                        Puede ajustar el precio si aplica descuento o recargo
+                    </span>
+                </div>
+                
+                <div class="form-group-modern">
+                    <label>
+                        <i class="fas fa-tooth"></i>
+                        Tipo de Consulta (Opcional)
+                    </label>
+                    <input 
+                        type="text" 
+                        name="tipo_consulta" 
+                        value="{{ cita.tipo_consulta|default:'' }}" 
+                        placeholder="Ej: Otro tipo de consulta personalizado" 
+                        class="form-control-modern"
+                    >
+                    <span class="form-help-text">
+                        <i class="fas fa-info-circle"></i>
+                        Solo si el servicio seleccionado no cubre lo necesario
+                    </span>
+                </div>
+            </div>
+
+            {% if dentistas %}
+            {% if cita.estado == 'reservada' or cita.estado == 'confirmada' %}
+            <div class="form-group-modern full-width">
+                <label>
+                    <i class="fas fa-user-md"></i>
+                    Dentista Asignado
+                </label>
+                <select name="dentista" class="form-control-modern">
+                    <option value="">-- Sin asignar --</option>
+                    {% for dentista in dentistas %}
+                        <option value="{{ dentista.id }}" {% if cita.dentista and cita.dentista.id == dentista.id %}selected{% endif %}>
+                            {{ dentista.nombre_completo }}{% if dentista.especialidad %} - {{ dentista.especialidad }}{% endif %}
+                        </option>
+                    {% endfor %}
                 </select>
+                <span class="form-help-text">
+                    <i class="fas fa-info-circle"></i>
+                    Puede cambiar el dentista asignado a esta cita
+                </span>
             </div>
-            
-            <div class="form-group" id="precio_container_edit_cita" style="display: {% if cita.precio_cobrado %}block{% else %}none{% endif %};">
-                <label><strong><i class="fas fa-dollar-sign"></i> Precio Cobrado:</strong></label>
-                <input type="text" inputmode="numeric" pattern="[0-9.,]*" name="precio_cobrado" id="precio_cobrado_edit_cita" value="{% if cita.precio_cobrado %}{{ cita.precio_cobrado|floatformat:0|stringformat:"d" }}{% endif %}" placeholder="60.000" class="form-control formato-numero">
-                <small style="color: #666;">Puede ajustar el precio si aplica descuento o recargo</small>
+            {% endif %}
+            {% endif %}
+
+            <div class="form-group-modern full-width">
+                <label>
+                    <i class="fas fa-sticky-note"></i>
+                    Notas
+                </label>
+                <textarea 
+                    name="notas" 
+                    rows="4" 
+                    class="form-control-modern"
+                    placeholder="Notas adicionales sobre la cita..."
+                >{{ cita.notas|default:'' }}</textarea>
             </div>
-            
-            <div class="form-group">
-                <label><strong><i class="fas fa-tooth"></i> Tipo de Consulta (Texto Libre - Opcional):</strong></label>
-                <input type="text" name="tipo_consulta" value="{{ cita.tipo_consulta|default:'' }}" placeholder="Ej: Otro tipo de consulta personalizado" class="form-control">
-                <small style="color: #666;">Solo si el servicio seleccionado no cubre lo necesario</small>
+
+            <div class="form-actions">
+                <a href="{% url 'panel_trabajador' %}" class="btn-modern btn-secondary-modern">
+                    <i class="fas fa-arrow-left"></i>
+                    Volver
+                </a>
+                <button type="submit" class="btn-modern btn-primary-modern">
+                    <i class="fas fa-save"></i>
+                    Guardar Cambios
+                </button>
             </div>
-        </div>
-        {% if dentistas %}
-        {% if cita.estado == 'reservada' or cita.estado == 'confirmada' %}
-        <div class="form-group full-width">
-            <label><strong>👨‍⚕️ Dentista Asignado:</strong></label>
-            <select name="dentista" class="form-control">
-                <option value="">-- Sin asignar --</option>
-                {% for dentista in dentistas %}
-                    <option value="{{ dentista.id }}" {% if cita.dentista and cita.dentista.id == dentista.id %}selected{% endif %}>
-                        {{ dentista.nombre_completo }}{% if dentista.especialidad %} - {{ dentista.especialidad }}{% endif %}
-                    </option>
-                {% endfor %}
-            </select>
-            <small style="color: #666;">Puede cambiar el dentista asignado a esta cita.</small>
-        </div>
-        {% endif %}
-        {% endif %}
-        <div class="form-group full-width">
-            <label><strong>📝 Notas:</strong></label>
-            <textarea name="notas" rows="3">{{ cita.notas|default:'' }}</textarea>
-        </div>
-        <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
-        <a href="{% url 'panel_trabajador' %}" class="btn">← Volver</a>
-    </form>
+        </form>
+    </div>
 </div>
 
 <script>
@@ -193,4 +502,3 @@ function actualizarPrecioEditarCita() {
 }
 </script>
 {% endblock %}
-
