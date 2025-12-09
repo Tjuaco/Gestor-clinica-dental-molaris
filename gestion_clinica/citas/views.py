@@ -133,13 +133,7 @@ class TrabajadorLoginView(LoginView):
     template_name = 'citas/auth/login.html'
     
     def dispatch(self, *args, **kwargs):
-        """Aplicar protección de rate limiting y permitir múltiples sesiones"""
-        # Si hay una sesión activa, cerrarla para permitir login con otro usuario
-        # Esto permite tener múltiples pestañas con diferentes usuarios
-        if self.request.user.is_authenticated:
-            from django.contrib.auth import logout
-            logout(self.request)
-        
+        """Aplicar protección de rate limiting"""
         # Obtener IP del cliente
         ip_address = self.get_client_ip()
         
@@ -207,6 +201,12 @@ class TrabajadorLoginView(LoginView):
     
     def form_valid(self, form):
         """Limpiar contador de intentos fallidos al iniciar sesión exitosamente"""
+        # Si hay una sesión activa con un usuario diferente, cerrarla
+        # Esto permite tener múltiples pestañas con diferentes usuarios
+        if self.request.user.is_authenticated and self.request.user != form.get_user():
+            from django.contrib.auth import logout
+            logout(self.request)
+        
         ip_address = self.get_client_ip()
         cache_key = f'login_attempts_{ip_address}'
         cache.delete(cache_key)
@@ -280,9 +280,15 @@ def obtener_citas_dia_ajax(request):
     except Perfil.DoesNotExist:
         return JsonResponse({'error': 'Perfil no encontrado'}, status=404)
     
-    # Obtener citas del día
+    # Obtener citas del día usando rango de fechas para evitar problemas de zona horaria
+    fecha_hoy = timezone.now().date()
+    from datetime import datetime, time as dt_time
+    inicio_dia = timezone.make_aware(datetime.combine(fecha_hoy, dt_time.min))
+    fin_dia = timezone.make_aware(datetime.combine(fecha_hoy, dt_time.max))
+    
     citas_hoy = Cita.objects.filter(
-        fecha_hora__date=timezone.now().date()
+        fecha_hora__gte=inicio_dia,
+        fecha_hora__lte=fin_dia
     ).select_related('tipo_servicio', 'dentista', 'cliente').prefetch_related('odontogramas').order_by('fecha_hora')
     
     # Obtener información de fichas
@@ -2575,7 +2581,11 @@ def dashboard_dentista(request):
     proximos_7_dias = hoy + timedelta(days=7)
     
     # Estadísticas del dentista (optimizado con select_related donde sea necesario)
-    citas_hoy = Cita.objects.filter(fecha_hora__date=hoy, dentista=perfil).count()
+    # Usar rango de fechas para asegurar que solo se cuenten citas del día actual
+    from datetime import datetime, time as dt_time
+    inicio_dia = timezone.make_aware(datetime.combine(hoy, dt_time.min))
+    fin_dia = timezone.make_aware(datetime.combine(hoy, dt_time.max))
+    citas_hoy = Cita.objects.filter(fecha_hora__gte=inicio_dia, fecha_hora__lte=fin_dia, dentista=perfil).count()
     citas_semana = Cita.objects.filter(
         fecha_hora__date__gte=semana_actual,
         dentista=perfil
@@ -2591,8 +2601,10 @@ def dashboard_dentista(request):
     citas_completadas = Cita.objects.filter(dentista=perfil, estado='completada').count()
     
     # Citas de hoy con detalles (optimizado con select_related)
+    # Usar rango de fechas para asegurar que solo se muestren citas del día actual
     citas_hoy_detalle = Cita.objects.filter(
-        fecha_hora__date=hoy,
+        fecha_hora__gte=inicio_dia,
+        fecha_hora__lte=fin_dia,
         dentista=perfil
     ).select_related('cliente', 'tipo_servicio').order_by('fecha_hora')[:10]
     
@@ -4184,9 +4196,14 @@ def calendario_personal(request):
         fecha_actual = fecha_obj.strftime('%Y-%m-%d')
     
     # Obtener citas del dentista para la fecha seleccionada
+    # Usar rango de fechas para asegurar que solo se muestren citas del día seleccionado
+    from datetime import time as dt_time
+    inicio_dia_fecha = timezone.make_aware(datetime.combine(fecha_obj, dt_time.min))
+    fin_dia_fecha = timezone.make_aware(datetime.combine(fecha_obj, dt_time.max))
     citas_dia = Cita.objects.filter(
         dentista=perfil,
-        fecha_hora__date=fecha_obj
+        fecha_hora__gte=inicio_dia_fecha,
+        fecha_hora__lte=fin_dia_fecha
     ).order_by('fecha_hora')
     
     # Obtener citas de la semana

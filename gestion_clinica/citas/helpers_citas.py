@@ -35,8 +35,12 @@ def obtener_citas_filtradas(estado, search_query=None, fecha=None, exclude_cance
         citas_list = citas_list.exclude(estado='cancelada')
     
     # Filtrar por fecha si se proporciona
+    # Usar rango de fechas para asegurar que solo se muestren citas del día especificado
     if fecha:
-        citas_list = citas_list.filter(fecha_hora__date=fecha)
+        from datetime import datetime, time as dt_time
+        inicio_dia = timezone.make_aware(datetime.combine(fecha, dt_time.min))
+        fin_dia = timezone.make_aware(datetime.combine(fecha, dt_time.max))
+        citas_list = citas_list.filter(fecha_hora__gte=inicio_dia, fecha_hora__lte=fin_dia)
     
     # Optimizar con select_related
     citas_list = citas_list.select_related('tipo_servicio', 'dentista', 'cliente')
