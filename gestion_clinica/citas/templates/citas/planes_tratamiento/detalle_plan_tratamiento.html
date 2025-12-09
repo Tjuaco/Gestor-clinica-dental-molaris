@@ -931,11 +931,24 @@
                             <i class="fas fa-dollar-sign"></i> {{ cita.precio_cobrado|pesos_chilenos }}
                         </div>
                     {% endif %}
+                        {% if cita.notas %}
+                        <div style="color: #64748b; font-size: 0.875rem; margin-top: 8px; padding: 8px; background: #f1f5f9; border-radius: 6px; border-left: 3px solid #14b8a6;">
+                            <i class="fas fa-sticky-note"></i> <strong>Notas:</strong> {{ cita.notas }}
+                        </div>
+                    {% endif %}
                 </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex-direction: column;">
                         <span class="badge" style="background: {% if cita.estado == 'completada' %}#10b981{% elif cita.estado == 'cancelada' %}#ef4444{% elif cita.estado == 'en_progreso' %}#8b5cf6{% else %}#6b7280{% endif %}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">
                             {{ cita.get_estado_display }}
                         </span>
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <a href="{% url 'editar_cita' cita.id %}" class="btn-action btn-edit" title="Editar cita" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <button onclick="confirmarEliminarCitaTratamiento({{ cita.id }}, '{{ cita.fecha_hora|date:"d/m/Y H:i"|escapejs }}')" class="btn-action btn-delete" title="Eliminar cita" style="padding: 6px 12px; font-size: 0.75rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-trash-alt"></i> Eliminar
+                            </button>
+                        </div>
                 </div>
             </div>
             {% endfor %}
@@ -1123,6 +1136,43 @@
 .required-badge {
     color: #ef4444;
     margin-left: 4px;
+}
+
+/* Estilos para botones de acción en citas de tratamiento */
+.btn-action {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-edit {
+    background: #14b8a6;
+    color: white;
+}
+
+.btn-edit:hover {
+    background: #0d9488;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(20, 184, 166, 0.3);
+}
+
+.btn-delete {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 </style>
 
@@ -2179,6 +2229,30 @@ function finalizarTratamiento() {
         console.error('Error:', error);
         showNotification('error', 'Error al finalizar el tratamiento');
     });
+}
+
+// Función para confirmar eliminación de cita de tratamiento
+function confirmarEliminarCitaTratamiento(citaId, fechaHora) {
+    if (confirm('¿Estás seguro de que deseas eliminar la cita del ' + fechaHora + '?\n\nEsta acción no se puede deshacer.')) {
+        // Crear formulario para enviar POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "eliminar_cita" 0 %}'.replace('0', citaId);
+        
+        // Agregar token CSRF
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Agregar al body y enviar
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 </script>
 
