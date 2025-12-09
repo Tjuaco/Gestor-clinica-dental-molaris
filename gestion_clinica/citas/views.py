@@ -919,10 +919,23 @@ def editar_cita(request, cita_id):
                 mensaje += f' Cliente asignado: {cita.cliente.nombre_completo}.'
             messages.success(request, mensaje)
             
+            # Verificar si la cita está vinculada a un plan de tratamiento
+            plan_tratamiento_id = None
+            if hasattr(cita, 'plan_tratamiento') and cita.plan_tratamiento:
+                plan_tratamiento_id = cita.plan_tratamiento.id
+            
             # Handle AJAX requests
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 from django.http import JsonResponse
-                return JsonResponse({'success': True, 'message': mensaje})
+                return JsonResponse({
+                    'success': True, 
+                    'message': mensaje,
+                    'redirect_url': reverse('detalle_plan_tratamiento', args=[plan_tratamiento_id]) if plan_tratamiento_id else reverse('panel_trabajador')
+                })
+            
+            # Redirigir al plan de tratamiento si la cita está vinculada a uno
+            if plan_tratamiento_id:
+                return redirect('detalle_plan_tratamiento', plan_id=plan_tratamiento_id)
             
             return redirect('panel_trabajador')
         except Exception as e:
@@ -2049,15 +2062,24 @@ def eliminar_cita(request, cita_id):
 
     cita = get_object_or_404(Cita, id=cita_id)
     
-    # Solo se pueden eliminar citas disponibles
-    if cita.estado != 'disponible':
+    # Guardar información antes de eliminar para redirección
+    plan_tratamiento_id = None
+    if hasattr(cita, 'plan_tratamiento') and cita.plan_tratamiento:
+        plan_tratamiento_id = cita.plan_tratamiento.id
+    
+    # Permitir eliminar citas disponibles o citas de tratamientos (reservadas/confirmadas)
+    # Las citas completadas no se pueden eliminar
+    if cita.estado == 'completada':
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             from django.http import JsonResponse
-            return JsonResponse({'success': False, 'error': f'No se puede eliminar una cita en estado "{cita.get_estado_display()}". Solo se pueden eliminar citas disponibles.'}, status=400)
-        messages.error(request, f'No se puede eliminar una cita en estado "{cita.get_estado_display()}".')
+            return JsonResponse({'success': False, 'error': f'No se puede eliminar una cita completada.'}, status=400)
+        messages.error(request, f'No se puede eliminar una cita completada.')
+        if plan_tratamiento_id:
+            return redirect('detalle_plan_tratamiento', plan_id=plan_tratamiento_id)
         return redirect('panel_trabajador')
     
     fecha_texto = cita.fecha_hora.strftime('%d/%m/%Y a las %H:%M')
+    estado_cita = cita.estado  # Guardar estado antes de eliminar
     cliente_info = cita.cliente.nombre_completo if cita.cliente else cita.paciente_nombre or "Sin cliente"
     servicio_info = cita.tipo_servicio.nombre if cita.tipo_servicio else cita.tipo_consulta or "Sin servicio"
     
@@ -2070,7 +2092,7 @@ def eliminar_cita(request, cita_id):
             accion='eliminar',
             modulo='citas',
             descripcion=f'Cita eliminada: {cliente_info} - {servicio_info}',
-            detalles=f'Fecha original: {fecha_texto}, Estado: {cita.estado}',
+            detalles=f'Fecha original: {fecha_texto}, Estado: {estado_cita}',
             objeto_id=cita_id,
             tipo_objeto='Cita',
             request=request
@@ -2079,7 +2101,11 @@ def eliminar_cita(request, cita_id):
         mensaje = f'Cita del {fecha_texto} eliminada exitosamente.'
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             from django.http import JsonResponse
-            return JsonResponse({'success': True, 'message': mensaje})
+            return JsonResponse({
+                'success': True, 
+                'message': mensaje,
+                'redirect_url': reverse('detalle_plan_tratamiento', args=[plan_tratamiento_id]) if plan_tratamiento_id else reverse('panel_trabajador')
+            })
         messages.success(request, mensaje)
     except Exception as e:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -2087,6 +2113,10 @@ def eliminar_cita(request, cita_id):
             return JsonResponse({'success': False, 'error': f'No se pudo eliminar la cita: {str(e)}'}, status=500)
         messages.error(request, f'No se pudo eliminar la cita: {e}')
 
+    # Redirigir al plan de tratamiento si la cita estaba vinculada a uno
+    if plan_tratamiento_id:
+        return redirect('detalle_plan_tratamiento', plan_id=plan_tratamiento_id)
+    
     # Volver al panel del trabajador para ver los cambios
     return redirect('panel_trabajador')
 

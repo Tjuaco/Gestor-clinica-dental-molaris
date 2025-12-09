@@ -2234,24 +2234,54 @@ function finalizarTratamiento() {
 // Función para confirmar eliminación de cita de tratamiento
 function confirmarEliminarCitaTratamiento(citaId, fechaHora) {
     if (confirm('¿Estás seguro de que deseas eliminar la cita del ' + fechaHora + '?\n\nEsta acción no se puede deshacer.')) {
-        // Crear formulario para enviar POST
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{% url "eliminar_cita" 0 %}'.replace('0', citaId);
-        
-        // Agregar token CSRF
+        // Obtener token CSRF
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (csrfToken) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfToken.value;
-            form.appendChild(csrfInput);
+        if (!csrfToken) {
+            showNotification('error', 'Error: No se pudo obtener el token de seguridad.');
+            return;
         }
         
-        // Agregar al body y enviar
-        document.body.appendChild(form);
-        form.submit();
+        // Mostrar notificación de carga
+        const loadingNotification = showNotification('info', 'Eliminando cita...', 0);
+        
+        // Enviar petición AJAX
+        fetch('{% url "eliminar_cita" 0 %}'.replace('0', citaId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken.value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Remover notificación de carga
+            if (loadingNotification && loadingNotification.parentNode) {
+                loadingNotification.remove();
+            }
+            
+            if (data.success) {
+                showNotification('success', data.message);
+                // Redirigir después de un breve delay
+                setTimeout(() => {
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        // Si no hay URL de redirección, recargar la página
+                        window.location.reload();
+                    }
+                }, 1500);
+            } else {
+                showNotification('error', data.error || 'Error al eliminar la cita');
+            }
+        })
+        .catch(error => {
+            // Remover notificación de carga
+            if (loadingNotification && loadingNotification.parentNode) {
+                loadingNotification.remove();
+            }
+            console.error('Error:', error);
+            showNotification('error', 'Error al eliminar la cita. Por favor, intenta nuevamente.');
+        });
     }
 }
 </script>
