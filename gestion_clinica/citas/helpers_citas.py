@@ -4,6 +4,7 @@ Funciones helper para simplificar y unificar la lógica de vistas administrativa
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 from django.utils import timezone
+from datetime import datetime, time as dt_time, timedelta
 from citas.models import Cita
 from historial_clinico.models import Odontograma
 from personal.models import Perfil
@@ -35,12 +36,24 @@ def obtener_citas_filtradas(estado, search_query=None, fecha=None, exclude_cance
         citas_list = citas_list.exclude(estado='cancelada')
     
     # Filtrar por fecha si se proporciona
-    # Usar rango de fechas para asegurar que solo se muestren citas del día especificado
+    # Usar rango de fechas en la zona horaria local para asegurar que solo se muestren citas del día especificado
     if fecha:
-        from datetime import datetime, time as dt_time
-        inicio_dia = timezone.make_aware(datetime.combine(fecha, dt_time.min))
-        fin_dia = timezone.make_aware(datetime.combine(fecha, dt_time.max))
-        citas_list = citas_list.filter(fecha_hora__gte=inicio_dia, fecha_hora__lte=fin_dia)
+        # Crear inicio y fin del día en la zona horaria local
+        inicio_dia_local = datetime.combine(fecha, dt_time.min)
+        fin_dia_local = datetime.combine(fecha, dt_time.max)
+        
+        # Convertir a timezone-aware usando la zona horaria configurada en Django
+        from django.conf import settings
+        import pytz
+        local_tz = pytz.timezone(settings.TIME_ZONE)
+        inicio_dia = local_tz.localize(inicio_dia_local)
+        fin_dia = local_tz.localize(fin_dia_local)
+        
+        # El fin_dia debe ser el inicio del día siguiente (exclusivo)
+        fin_dia = inicio_dia + timedelta(days=1)
+        
+        # Filtrar citas que estén en este rango (inicio_dia inclusive, fin_dia exclusive)
+        citas_list = citas_list.filter(fecha_hora__gte=inicio_dia, fecha_hora__lt=fin_dia)
     
     # Optimizar con select_related
     citas_list = citas_list.select_related('tipo_servicio', 'dentista', 'cliente')

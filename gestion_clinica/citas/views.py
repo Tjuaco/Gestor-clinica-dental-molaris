@@ -280,15 +280,20 @@ def obtener_citas_dia_ajax(request):
     except Perfil.DoesNotExist:
         return JsonResponse({'error': 'Perfil no encontrado'}, status=404)
     
-    # Obtener citas del día usando rango de fechas para evitar problemas de zona horaria
-    fecha_hoy = timezone.now().date()
-    from datetime import datetime, time as dt_time
-    inicio_dia = timezone.make_aware(datetime.combine(fecha_hoy, dt_time.min))
-    fin_dia = timezone.make_aware(datetime.combine(fecha_hoy, dt_time.max))
+    # Obtener citas del día usando rango de fechas en la zona horaria local
+    fecha_hoy = timezone.localtime(timezone.now()).date()
+    from datetime import datetime, time as dt_time, timedelta
+    from django.conf import settings
+    import pytz
+    local_tz = pytz.timezone(settings.TIME_ZONE)
+    
+    inicio_dia_local = datetime.combine(fecha_hoy, dt_time.min)
+    inicio_dia = local_tz.localize(inicio_dia_local)
+    fin_dia = inicio_dia + timedelta(days=1)
     
     citas_hoy = Cita.objects.filter(
         fecha_hora__gte=inicio_dia,
-        fecha_hora__lte=fin_dia
+        fecha_hora__lt=fin_dia
     ).select_related('tipo_servicio', 'dentista', 'cliente').prefetch_related('odontogramas').order_by('fecha_hora')
     
     # Obtener información de fichas
@@ -2047,7 +2052,8 @@ def citas_dia(request):
     )
     
     search_query = request.GET.get('search', '').strip()
-    fecha_hoy = timezone.now().date()
+    # Usar fecha local para asegurar que se muestren solo las citas del día actual en la zona horaria local
+    fecha_hoy = timezone.localtime(timezone.now()).date()
     page = request.GET.get('page', 1)
     
     # Obtener citas usando función helper
@@ -2572,8 +2578,8 @@ def dashboard_dentista(request):
     except Perfil.DoesNotExist:
         return redirect('login')
     
-    # Fechas de referencia
-    ahora = timezone.now()
+    # Fechas de referencia - usar fecha local
+    ahora = timezone.localtime(timezone.now())
     hoy = ahora.date()
     inicio_mes = hoy.replace(day=1)
     fin_mes = (inicio_mes + timedelta(days=32)).replace(day=1) - timedelta(days=1)
@@ -2581,11 +2587,15 @@ def dashboard_dentista(request):
     proximos_7_dias = hoy + timedelta(days=7)
     
     # Estadísticas del dentista (optimizado con select_related donde sea necesario)
-    # Usar rango de fechas para asegurar que solo se cuenten citas del día actual
+    # Usar rango de fechas en la zona horaria local para asegurar que solo se cuenten citas del día actual
     from datetime import datetime, time as dt_time
-    inicio_dia = timezone.make_aware(datetime.combine(hoy, dt_time.min))
-    fin_dia = timezone.make_aware(datetime.combine(hoy, dt_time.max))
-    citas_hoy = Cita.objects.filter(fecha_hora__gte=inicio_dia, fecha_hora__lte=fin_dia, dentista=perfil).count()
+    from django.conf import settings
+    import pytz
+    local_tz = pytz.timezone(settings.TIME_ZONE)
+    inicio_dia_local = datetime.combine(hoy, dt_time.min)
+    inicio_dia = local_tz.localize(inicio_dia_local)
+    fin_dia = inicio_dia + timedelta(days=1)
+    citas_hoy = Cita.objects.filter(fecha_hora__gte=inicio_dia, fecha_hora__lt=fin_dia, dentista=perfil).count()
     citas_semana = Cita.objects.filter(
         fecha_hora__date__gte=semana_actual,
         dentista=perfil
@@ -2604,7 +2614,7 @@ def dashboard_dentista(request):
     # Usar rango de fechas para asegurar que solo se muestren citas del día actual
     citas_hoy_detalle = Cita.objects.filter(
         fecha_hora__gte=inicio_dia,
-        fecha_hora__lte=fin_dia,
+        fecha_hora__lt=fin_dia,
         dentista=perfil
     ).select_related('cliente', 'tipo_servicio').order_by('fecha_hora')[:10]
     
@@ -4187,23 +4197,27 @@ def calendario_personal(request):
     except Perfil.DoesNotExist:
         return redirect('login')
 
-    # Obtener parámetros de fecha
-    fecha_actual = request.GET.get('fecha', timezone.now().strftime('%Y-%m-%d'))
+    # Obtener parámetros de fecha - usar fecha local
+    fecha_actual = request.GET.get('fecha', timezone.localtime(timezone.now()).strftime('%Y-%m-%d'))
     try:
         fecha_obj = datetime.strptime(fecha_actual, '%Y-%m-%d').date()
     except ValueError:
-        fecha_obj = timezone.now().date()
+        fecha_obj = timezone.localtime(timezone.now()).date()
         fecha_actual = fecha_obj.strftime('%Y-%m-%d')
     
     # Obtener citas del dentista para la fecha seleccionada
-    # Usar rango de fechas para asegurar que solo se muestren citas del día seleccionado
+    # Usar rango de fechas en la zona horaria local para asegurar que solo se muestren citas del día seleccionado
     from datetime import time as dt_time
-    inicio_dia_fecha = timezone.make_aware(datetime.combine(fecha_obj, dt_time.min))
-    fin_dia_fecha = timezone.make_aware(datetime.combine(fecha_obj, dt_time.max))
+    from django.conf import settings
+    import pytz
+    local_tz = pytz.timezone(settings.TIME_ZONE)
+    inicio_dia_local = datetime.combine(fecha_obj, dt_time.min)
+    inicio_dia_fecha = local_tz.localize(inicio_dia_local)
+    fin_dia_fecha = inicio_dia_fecha + timedelta(days=1)
     citas_dia = Cita.objects.filter(
         dentista=perfil,
         fecha_hora__gte=inicio_dia_fecha,
-        fecha_hora__lte=fin_dia_fecha
+        fecha_hora__lt=fin_dia_fecha
     ).order_by('fecha_hora')
     
     # Obtener citas de la semana
