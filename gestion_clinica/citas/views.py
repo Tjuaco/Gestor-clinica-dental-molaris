@@ -780,7 +780,14 @@ def editar_cita(request, cita_id):
         messages.error(request, 'No tienes permisos para acceder a esta función.')
         return redirect('login')
 
-    cita = get_object_or_404(Cita, id=cita_id)
+    # Cargar la cita con sus relaciones para evitar errores
+    try:
+        cita = Cita.objects.select_related(
+            'cliente', 'dentista', 'tipo_servicio', 'plan_tratamiento'
+        ).get(id=cita_id)
+    except Cita.DoesNotExist:
+        messages.error(request, 'La cita no existe.')
+        return redirect('panel_trabajador')
     
     # Restricción: No se pueden editar citas completadas
     if cita.estado == 'completada':
@@ -800,6 +807,14 @@ def editar_cita(request, cita_id):
         cliente_id = request.POST.get('cliente_id', '')
         
         try:
+            if not fecha_hora_str:
+                messages.error(request, 'La fecha y hora son requeridas.')
+                # Handle AJAX requests
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    from django.http import JsonResponse
+                    return JsonResponse({'success': False, 'message': 'La fecha y hora son requeridas.'}, status=400)
+                return redirect('editar_cita', cita_id=cita_id)
+            
             fecha_hora = datetime.fromisoformat(fecha_hora_str)
             cita.fecha_hora = fecha_hora
             cita.tipo_consulta = tipo_consulta
@@ -867,18 +882,37 @@ def editar_cita(request, cita_id):
             cita.save()
             
             # Registrar en auditoría
-            cliente_info = cita.cliente.nombre_completo if cita.cliente else cita.paciente_nombre or "Sin cliente"
-            servicio_info = cita.tipo_servicio.nombre if cita.tipo_servicio else cita.tipo_consulta or "Sin servicio"
-            registrar_auditoria(
-                usuario=perfil,
-                accion='editar',
-                modulo='citas',
-                descripcion=f'Cita editada: {cliente_info} - {servicio_info}',
-                detalles=f'Fecha: {cita.fecha_hora.strftime("%d/%m/%Y %H:%M")}, Estado: {cita.estado}, Dentista: {cita.dentista.nombre_completo if cita.dentista else "N/A"}',
-                objeto_id=cita.id,
-                tipo_objeto='Cita',
-                request=request
-            )
+            try:
+                cliente_info = cita.cliente.nombre_completo if (hasattr(cita, 'cliente') and cita.cliente) else (cita.paciente_nombre or "Sin cliente")
+            except Exception:
+                cliente_info = cita.paciente_nombre or "Sin cliente"
+            
+            try:
+                servicio_info = cita.tipo_servicio.nombre if (hasattr(cita, 'tipo_servicio') and cita.tipo_servicio) else (cita.tipo_consulta or "Sin servicio")
+            except Exception:
+                servicio_info = cita.tipo_consulta or "Sin servicio"
+            
+            try:
+                dentista_info = cita.dentista.nombre_completo if (hasattr(cita, 'dentista') and cita.dentista) else "N/A"
+            except Exception:
+                dentista_info = "N/A"
+            
+            try:
+                registrar_auditoria(
+                    usuario=perfil,
+                    accion='editar',
+                    modulo='citas',
+                    descripcion=f'Cita editada: {cliente_info} - {servicio_info}',
+                    detalles=f'Fecha: {cita.fecha_hora.strftime("%d/%m/%Y %H:%M")}, Estado: {cita.estado}, Dentista: {dentista_info}',
+                    objeto_id=cita.id,
+                    tipo_objeto='Cita',
+                    request=request
+                )
+            except Exception as e:
+                # Si falla la auditoría, no es crítico, solo lo registramos
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f'Error al registrar auditoría en editar_cita: {e}')
             
             mensaje = 'Cita actualizada correctamente.'
             if cliente_id and cita.cliente:
@@ -900,15 +934,35 @@ def editar_cita(request, cita_id):
                 return JsonResponse({'success': False, 'message': f'Error al actualizar la cita: {e}'}, status=400)
 
     # Obtener servicios activos para el selector
-    servicios_activos = TipoServicio.objects.filter(activo=True).order_by('categoria', 'nombre')
+    try:
+        servicios_activos = TipoServicio.objects.filter(activo=True).order_by('categoria', 'nombre')
+    except Exception as e:
+        servicios_activos = []
+        messages.warning(request, f'Error al cargar servicios: {e}')
     
     # Obtener dentistas para el selector (solo si es reservada/confirmada)
     dentistas = None
-    if cita.estado in ['reservada', 'confirmada']:
-        dentistas = Perfil.objects.filter(es_dentista=True, activo=True).order_by('nombre', 'apellido')
+    try:
+        if cita.estado in ['reservada', 'confirmada']:
+            dentistas = Perfil.objects.filter(es_dentista=True, activo=True).order_by('nombre', 'apellido')
+    except Exception as e:
+        messages.warning(request, f'Error al cargar dentistas: {e}')
     
     # Obtener clientes activos para el selector
-    clientes = Cliente.objects.filter(activo=True).order_by('nombre_completo')
+    try:
+        clientes = Cliente.objects.filter(activo=True).order_by('nombre_completo')
+    except Exception as e:
+        clientes = []
+        messages.warning(request, f'Error al cargar clientes: {e}')
+    
+    # Verificar si la cita está vinculada a un plan de tratamiento
+    plan_tratamiento = None
+    try:
+        if hasattr(cita, 'plan_tratamiento') and cita.plan_tratamiento:
+            plan_tratamiento = cita.plan_tratamiento
+    except Exception as e:
+        # Si hay un error al acceder al plan, simplemente lo ignoramos
+        pass
     
     context = {
         'perfil': perfil,
@@ -917,8 +971,20 @@ def editar_cita(request, cita_id):
         'dentistas': dentistas,
         'clientes': clientes,
         'puede_editar_cliente': puede_editar_cliente,
+        'plan_tratamiento': plan_tratamiento,
     }
-    return render(request, 'citas/citas/editar_cita.html', context)
+    
+    try:
+        return render(request, 'citas/citas/editar_cita.html', context)
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        messages.error(request, f'Error al cargar la página de edición: {str(e)}')
+        # Log del error para debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f'Error en editar_cita: {error_trace}')
+        return redirect('panel_trabajador')
 
 
 # Acciones sobre citas
