@@ -1716,29 +1716,35 @@
                 form.method = 'POST';
                 form.action = '/reservas/reservar/' + citaId + '/';
                 
-                // Agregar token CSRF
-                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-                if (csrfToken) {
-                    const csrfInput = document.createElement('input');
-                    csrfInput.type = 'hidden';
-                    csrfInput.name = 'csrfmiddlewaretoken';
-                    csrfInput.value = csrfToken.value;
-                    form.appendChild(csrfInput);
-                } else {
-                    // Intentar obtener el token de las cookies
+                // Agregar token CSRF - función helper mejorada
+                function getCSRFToken() {
+                    // Primero intentar obtener del input hidden
+                    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+                    if (csrfInput && csrfInput.value) {
+                        return csrfInput.value;
+                    }
+                    // Si no está en el input, intentar obtener de las cookies
                     const cookies = document.cookie.split(';');
                     for (let i = 0; i < cookies.length; i++) {
                         const cookie = cookies[i].trim();
                         if (cookie.startsWith('csrftoken=')) {
-                            const csrfInput = document.createElement('input');
-                            csrfInput.type = 'hidden';
-                            csrfInput.name = 'csrfmiddlewaretoken';
-                            csrfInput.value = cookie.substring('csrftoken='.length);
-                            form.appendChild(csrfInput);
-                            break;
+                            return cookie.substring('csrftoken='.length);
                         }
                     }
+                    return null;
                 }
+                
+                const csrfToken = getCSRFToken();
+                if (!csrfToken) {
+                    alert('Error: No se pudo obtener el token de seguridad. Por favor, recarga la página e intenta nuevamente.');
+                    return;
+                }
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
                 
                 // Agregar el formulario al body y enviarlo
                 document.body.appendChild(form);

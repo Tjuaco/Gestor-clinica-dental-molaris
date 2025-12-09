@@ -497,6 +497,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    {% csrf_token %}
     {% block main_layout %}
     <div class="main-layout">
         <div class="container">
