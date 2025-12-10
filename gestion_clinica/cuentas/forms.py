@@ -123,14 +123,32 @@ class RegistroClienteForm(UserCreationForm):
         if not email:
             raise forms.ValidationError("El email es obligatorio")
         
+        # Normalizar email a minúsculas para comparación
+        email = email.lower()
+        
         # Verificar que el email no esté ya registrado
-        from django.contrib.auth.models import User
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Este email ya está registrado en el sistema. Si ya tienes cuenta, inicia sesión.")
+        try:
+            from django.contrib.auth.models import User
+            if User.objects.filter(email__iexact=email).exists():
+                raise forms.ValidationError("Este email ya está registrado en el sistema. Si ya tienes cuenta, inicia sesión.")
+        except Exception as e:
+            # Si hay un error en la consulta, registrar pero no bloquear el registro
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error al verificar email en User: {str(e)}")
         
         # También verificar en PerfilCliente
-        if PerfilCliente.objects.filter(email=email).exists():
-            raise forms.ValidationError("Este email ya está registrado en el sistema. Si ya tienes cuenta, inicia sesión.")
+        try:
+            if PerfilCliente.objects.filter(email__iexact=email).exists():
+                raise forms.ValidationError("Este email ya está registrado en el sistema. Si ya tienes cuenta, inicia sesión.")
+        except forms.ValidationError:
+            # Re-lanzar ValidationError para que se muestre al usuario
+            raise
+        except Exception as e:
+            # Si hay un error en la consulta, registrar pero no bloquear el registro
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error al verificar email en PerfilCliente: {str(e)}")
         
         return email
     

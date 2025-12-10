@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 
 def registro_cliente(request):
     if request.method == 'POST':
-        form = RegistroClienteForm(request.POST)
-        if form.is_valid():
+        try:
+            form = RegistroClienteForm(request.POST)
+            if form.is_valid():
             # Guardar datos en sesión para verificación
             telefono_normalizado = _normalizar_telefono_chile(form.cleaned_data['telefono'])
             email = form.cleaned_data['email']
@@ -62,10 +63,15 @@ def registro_cliente(request):
                 logger.error(f"Error al generar código de verificación: {str(e)}")
                 messages.error(request, f'Error al generar código de verificación: {str(e)}')
                 return render(request, 'cuentas/registro_cliente.html', {'form': form})
-        else:
-            # El formulario no es válido (tiene errores de validación)
-            # Los errores se mostrarán automáticamente en el template
-            pass
+            else:
+                # El formulario no es válido (tiene errores de validación)
+                # Los errores se mostrarán automáticamente en el template
+                pass
+        except Exception as e:
+            # Capturar cualquier error inesperado durante la validación del formulario
+            logger.error(f"Error inesperado al procesar formulario de registro: {str(e)}", exc_info=True)
+            messages.error(request, 'Ha ocurrido un error al procesar el formulario. Por favor, verifica tus datos e intenta nuevamente.')
+            form = RegistroClienteForm(request.POST)  # Recrear formulario con datos del POST
     else:
         form = RegistroClienteForm()
     
@@ -73,7 +79,7 @@ def registro_cliente(request):
     try:
         return render(request, 'cuentas/registro_cliente.html', {'form': form})
     except Exception as e:
-        logger.error(f"Error al renderizar formulario de registro: {str(e)}")
+        logger.error(f"Error al renderizar formulario de registro: {str(e)}", exc_info=True)
         messages.error(request, 'Ha ocurrido un error al procesar el formulario. Por favor, intenta nuevamente.')
         form = RegistroClienteForm()  # Crear formulario limpio en caso de error
         return render(request, 'cuentas/registro_cliente.html', {'form': form})
