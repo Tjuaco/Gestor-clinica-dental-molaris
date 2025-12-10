@@ -344,9 +344,9 @@ def login_cliente(request):
     cache_key = f'login_cliente_attempts_{ip_address}'
     attempts = cache.get(cache_key, 0)
     
-    # Verificar rate limiting (máximo 5 intentos en 15 minutos)
+    # Verificar rate limiting (máximo 5 intentos en 5 minutos)
     if attempts >= 5:
-        messages.error(request, '⚠️ Demasiados intentos fallidos. Por favor, espera 15 minutos antes de intentar nuevamente.')
+        messages.error(request, '⚠️ Demasiados intentos fallidos. Por favor, espera 5 minutos antes de intentar nuevamente.')
         logger.warning(f'Login cliente bloqueado por rate limiting - IP: {ip_address}')
         form = AuthenticationForm()
         response = render(request, 'cuentas/login.html', {'form': form})
@@ -372,7 +372,7 @@ def login_cliente(request):
                 except PerfilCliente.DoesNotExist:
                     # Incrementar contador de intentos fallidos
                     attempts = cache.get(cache_key, 0) + 1
-                    cache.set(cache_key, attempts, 900)  # 15 minutos
+                    cache.set(cache_key, attempts, 300)  # 5 minutos
                     logger.warning(f'Intento de login cliente fallido - Usuario sin PerfilCliente: {username[:20]}, IP: {ip_address}')
                     messages.error(request, 'Tu cuenta no está configurada correctamente. Por favor, contacta al administrador.')
                     return render(request, 'cuentas/login.html', {'form': form})
@@ -392,7 +392,7 @@ def login_cliente(request):
                         if not cliente_doc.activo:
                             # Incrementar contador de intentos fallidos
                             attempts = cache.get(cache_key, 0) + 1
-                            cache.set(cache_key, attempts, 900)  # 15 minutos
+                            cache.set(cache_key, attempts, 300)  # 5 minutos
                             logger.warning(f'Intento de login cliente fallido - Cuenta desactivada: {username[:20]}, IP: {ip_address}')
                             # Cliente fue borrado/desactivado en el sistema de gestión
                             messages.error(request, 'Tu cuenta ha sido desactivada en el sistema de gestión. Por favor, contacta a la clínica.')
@@ -414,7 +414,7 @@ def login_cliente(request):
             else:
                 # Incrementar contador de intentos fallidos
                 attempts = cache.get(cache_key, 0) + 1
-                cache.set(cache_key, attempts, 900)  # 15 minutos
+                cache.set(cache_key, attempts, 300)  # 5 minutos
                 
                 # Log del intento fallido (sin revelar información sensible)
                 username_attempt = request.POST.get('username', '').strip()[:20]  # Limitar longitud
@@ -427,7 +427,7 @@ def login_cliente(request):
                 
                 # Verificar si ya alcanzó el límite después de incrementar
                 if attempts >= 5:
-                    messages.error(request, '⚠️ Demasiados intentos fallidos. Tu acceso ha sido temporalmente bloqueado por 15 minutos. Por favor, espera antes de intentar nuevamente.')
+                    messages.error(request, '⚠️ Demasiados intentos fallidos. Tu acceso ha sido temporalmente bloqueado por 5 minutos. Por favor, espera antes de intentar nuevamente.')
                     # Renderizar formulario bloqueado
                     form = AuthenticationForm()
                     response = render(request, 'cuentas/login.html', {'form': form})
@@ -442,11 +442,11 @@ def login_cliente(request):
         else:
             # Incrementar contador de intentos fallidos (formulario inválido)
             attempts = cache.get(cache_key, 0) + 1
-            cache.set(cache_key, attempts, 900)  # 15 minutos
+            cache.set(cache_key, attempts, 300)  # 5 minutos
             
             # Verificar si ya alcanzó el límite
             if attempts >= 5:
-                messages.error(request, '⚠️ Demasiados intentos fallidos. Tu acceso ha sido temporalmente bloqueado por 15 minutos. Por favor, espera antes de intentar nuevamente.')
+                messages.error(request, '⚠️ Demasiados intentos fallidos. Tu acceso ha sido temporalmente bloqueado por 5 minutos. Por favor, espera antes de intentar nuevamente.')
             else:
                 messages.error(request, 'Por favor, corrige los errores en el formulario.')
     else:
