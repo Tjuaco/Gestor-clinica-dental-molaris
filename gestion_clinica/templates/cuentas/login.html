@@ -398,27 +398,41 @@
         // Prevenir que el botón "atrás" del navegador muestre contenido en caché
         // Esto es especialmente importante después de cerrar sesión
         (function() {
+            var loginUrl = '{% url "login_cliente" %}';
+            
             // Si el usuario intenta usar el botón "atrás", forzar recarga desde el servidor
             window.addEventListener('pageshow', function(event) {
                 // pageshow se dispara cuando la página se carga desde el caché (botón atrás)
                 if (event.persisted) {
-                    // La página fue cargada desde el caché, recargar desde el servidor
-                    window.location.reload();
+                    // La página fue cargada desde el caché, usar replace para no agregar al historial
+                    window.location.replace(loginUrl + '?nocache=' + Date.now());
                 }
             });
 
-            // Prevenir que se almacene en el historial del navegador después del logout
-            // Si hay un parámetro que indique que venimos del logout, limpiar historial
-            if (window.performance && window.performance.navigation.type === 2) {
-                // Tipo 2 = back_forward (usuario usó botón atrás/adelante)
-                // Forzar recarga para asegurar que tenemos la versión más reciente
-                window.location.replace(window.location.href);
+            // Detectar si venimos del botón "atrás" usando performance API
+            if (window.performance && window.performance.navigation) {
+                if (window.performance.navigation.type === 2) {
+                    // Tipo 2 = back_forward (usuario usó botón atrás/adelante)
+                    // Usar replace para no agregar al historial
+                    window.location.replace(loginUrl + '?nocache=' + Date.now());
+                }
             }
 
             // Agregar listener para el evento popstate (cuando el usuario navega en el historial)
+            // Esto es más confiable que pageshow en algunos navegadores
             window.addEventListener('popstate', function(event) {
-                // Si el usuario intenta volver atrás, redirigir al login
-                window.location.href = '{% url "login_cliente" %}';
+                // Si el usuario intenta volver atrás, redirigir al login usando replace
+                // replace() no agrega entrada al historial, así que el botón "atrás" no funcionará
+                window.location.replace(loginUrl + '?nocache=' + Date.now());
+            });
+
+            // Prevenir que se pueda usar el botón "atrás" después de llegar aquí
+            // Agregar una entrada al historial que redirige al login
+            history.pushState(null, null, loginUrl);
+            
+            // Si el usuario intenta volver, interceptar y redirigir
+            window.addEventListener('popstate', function(event) {
+                window.location.replace(loginUrl + '?nocache=' + Date.now());
             });
         })();
     </script>

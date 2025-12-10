@@ -327,8 +327,17 @@ def login_cliente(request):
     Vista de login personalizada que verifica que el cliente exista en el sistema de gestión.
     Incluye protección contra fuerza bruta con rate limiting.
     """
+    # Si el usuario está autenticado, verificar si es cliente o trabajador
     if request.user.is_authenticated:
-        return redirect('panel_cliente')
+        try:
+            PerfilCliente.objects.get(user=request.user)
+            # Es cliente, redirigir al panel
+            return redirect('panel_cliente')
+        except PerfilCliente.DoesNotExist:
+            # Es trabajador intentando acceder al login de clientes, cerrar sesión
+            logout(request)
+            messages.warning(request, 'Esta sección es solo para clientes. Por favor, inicia sesión con tu cuenta de cliente.')
+            # Continuar con el login de clientes
     
     # Aplicar protección de rate limiting
     ip_address = get_client_ip(request)
@@ -442,16 +451,31 @@ def login_cliente(request):
 @login_required
 def logout_cliente(request):
     """Vista para cerrar sesión de clientes con protección contra caché del navegador"""
-    # Cerrar sesión primero
+    # Verificar si ya está deslogueado (por si viene del caché del navegador)
+    if not request.user.is_authenticated:
+        # Ya está deslogueado, redirigir directamente al login de clientes
+        from django.http import HttpResponseRedirect
+        from django.urls import reverse
+        login_url = reverse('login_cliente')
+        response = HttpResponseRedirect(login_url)
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
+    
+    # Cerrar sesión
     logout(request)
     messages.success(request, 'Has cerrado sesión correctamente.')
     
-    # Usar HttpResponseRedirect con URL absoluta para evitar cualquier redirección por configuración
+    # Usar HttpResponseRedirect con URL absoluta y parámetro único para evitar caché
     from django.http import HttpResponseRedirect
     from django.urls import reverse
+    import time
     
-    # Obtener la URL absoluta del login de clientes
+    # Obtener la URL absoluta del login de clientes con parámetro único para evitar caché
     login_url = reverse('login_cliente')
+    # Agregar timestamp para evitar que el navegador use caché
+    login_url += f'?logout={int(time.time())}'
     
     # Crear respuesta de redirección con headers anti-caché agresivos
     response = HttpResponseRedirect(login_url)
