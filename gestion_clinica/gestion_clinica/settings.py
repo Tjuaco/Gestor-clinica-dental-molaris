@@ -21,6 +21,9 @@ else:
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
+# CSRF Trusted Origins - Agregar tu IP o dominio
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000', cast=Csv())
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -271,15 +274,24 @@ LOGS_DIR.mkdir(exist_ok=True)
 # CONFIGURACIONES DE SEGURIDAD PARA PRODUCCIÓN
 # ============================================
 if not DEBUG:
-    # HTTPS y seguridad
-    SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
-    SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=31536000, cast=int)  # 1 año
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True, cast=bool)
-    SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=True, cast=bool)
+    # Detectar si estamos usando HTTPS o HTTP
+    USE_HTTPS = config('USE_HTTPS', default=False, cast=bool)
     
-    # Cookies seguras
-    SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=True, cast=bool)
-    CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
+    # HTTPS y seguridad (solo si usamos HTTPS)
+    if USE_HTTPS:
+        SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+        SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=31536000, cast=int)  # 1 año
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True, cast=bool)
+        SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=True, cast=bool)
+        # Cookies seguras solo con HTTPS
+        SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=True, cast=bool)
+        CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
+    else:
+        # Si usamos HTTP, las cookies no deben ser seguras
+        SECURE_SSL_REDIRECT = False
+        SESSION_COOKIE_SECURE = False
+        CSRF_COOKIE_SECURE = False
+    
     SESSION_COOKIE_HTTPONLY = True
     CSRF_COOKIE_HTTPONLY = True
     
@@ -294,3 +306,7 @@ if not DEBUG:
     # Content Security Policy (opcional, puede causar problemas con algunos templates)
     # SECURE_CONTENT_TYPE_NOSNIFF = True
     # SECURE_BROWSER_XSS_FILTER = True
+
+# Handlers para páginas de error personalizadas
+handler404 = 'citas.views.handler404'
+handler500 = 'citas.views.handler500'

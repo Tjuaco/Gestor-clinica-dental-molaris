@@ -18953,3 +18953,17 @@ def enviar_documentos_tratamiento(request, plan_id):
         import traceback
         logger.error(traceback.format_exc())
         return JsonResponse({'success': False, 'error': f'Error al enviar los documentos: {str(e)}'}, status=500)
+
+
+# ============================================================================
+# HANDLERS PARA PÁGINAS DE ERROR PERSONALIZADAS
+# ============================================================================
+
+def handler404(request, exception):
+    """Handler para errores 404 - Página no encontrada"""
+    return render(request, '404.html', status=404)
+
+
+def handler500(request):
+    """Handler para errores 500 - Error del servidor"""
+    return render(request, '500.html', status=500)
