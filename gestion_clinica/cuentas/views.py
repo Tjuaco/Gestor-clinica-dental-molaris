@@ -6,10 +6,16 @@ from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
+from django.conf import settings
+import logging
+import time
 from .forms import RegistroClienteForm
 from .models import CodigoVerificacion, PerfilCliente
 from reservas.email_service import enviar_codigo_por_email, _normalizar_telefono_chile
 from reservas.documentos_models import ClienteDocumento
+
+logger = logging.getLogger(__name__)
 
 def registro_cliente(request):
     if request.method == 'POST':
@@ -306,12 +312,35 @@ def validar_telefono(request):
     return JsonResponse({'disponible': False})
 
 
+def get_client_ip(request):
+    """Obtener la IP real del cliente"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
 def login_cliente(request):
     """
     Vista de login personalizada que verifica que el cliente exista en el sistema de gestión.
+    Incluye protección contra fuerza bruta con rate limiting.
     """
     if request.user.is_authenticated:
         return redirect('panel_cliente')
+    
+    # Aplicar protección de rate limiting
+    ip_address = get_client_ip(request)
+    cache_key = f'login_cliente_attempts_{ip_address}'
+    attempts = cache.get(cache_key, 0)
+    
+    # Verificar rate limiting (máximo 5 intentos en 15 minutos)
+    if attempts >= 5:
+        messages.error(request, '⚠️ Demasiados intentos fallidos. Por favor, espera 15 minutos antes de intentar nuevamente.')
+        logger.warning(f'Login cliente bloqueado por rate limiting - IP: {ip_address}')
+        form = AuthenticationForm()
+        return render(request, 'cuentas/login.html', {'form': form})
     
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -327,6 +356,10 @@ def login_cliente(request):
                 try:
                     perfil = PerfilCliente.objects.get(user=user)
                 except PerfilCliente.DoesNotExist:
+                    # Incrementar contador de intentos fallidos
+                    attempts = cache.get(cache_key, 0) + 1
+                    cache.set(cache_key, attempts, 900)  # 15 minutos
+                    logger.warning(f'Intento de login cliente fallido - Usuario sin PerfilCliente: {username[:20]}, IP: {ip_address}')
                     messages.error(request, 'Tu cuenta no está configurada correctamente. Por favor, contacta al administrador.')
                     return render(request, 'cuentas/login.html', {'form': form})
                 
@@ -343,6 +376,10 @@ def login_cliente(request):
                     if cliente_doc:
                         # Cliente existe en el sistema de gestión
                         if not cliente_doc.activo:
+                            # Incrementar contador de intentos fallidos
+                            attempts = cache.get(cache_key, 0) + 1
+                            cache.set(cache_key, attempts, 900)  # 15 minutos
+                            logger.warning(f'Intento de login cliente fallido - Cuenta desactivada: {username[:20]}, IP: {ip_address}')
                             # Cliente fue borrado/desactivado en el sistema de gestión
                             messages.error(request, 'Tu cuenta ha sido desactivada en el sistema de gestión. Por favor, contacta a la clínica.')
                             return render(request, 'cuentas/login.html', {'form': form})
@@ -350,17 +387,40 @@ def login_cliente(request):
                     # Si no existe, permitir login (puede ser registro nuevo)
                 except Exception as e:
                     # En caso de error, permitir login pero registrar el error
-                    import logging
-                    logger = logging.getLogger(__name__)
                     logger.error(f"Error al verificar cliente en pacientes_cliente: {e}")
+                
+                # Login exitoso - limpiar contador de intentos fallidos
+                cache.delete(cache_key)
+                logger.info(f'Login cliente exitoso - Usuario: {username}, IP: {ip_address}')
                 
                 # Especificar backend al hacer login
                 login(request, user, backend='cuentas.backends.ClienteBackend')
                 messages.success(request, f'¡Bienvenido de nuevo, {perfil.nombre_completo or username}!')
                 return redirect('panel_cliente')
             else:
-                messages.error(request, 'Usuario o contraseña incorrectos.')
+                # Incrementar contador de intentos fallidos
+                attempts = cache.get(cache_key, 0) + 1
+                cache.set(cache_key, attempts, 900)  # 15 minutos
+                
+                # Log del intento fallido (sin revelar información sensible)
+                username_attempt = request.POST.get('username', '').strip()[:20]  # Limitar longitud
+                logger.warning(f'Intento de login cliente fallido - IP: {ip_address}, Usuario: {username_attempt}, Intentos: {attempts}')
+                
+                # Mensaje genérico que no revela si el usuario existe o no (protección contra user enumeration)
+                # Pequeño delay para normalizar tiempo de respuesta (protección contra timing attacks)
+                if not settings.DEBUG:  # Solo en producción
+                    time.sleep(0.1)
+                
+                if attempts >= 5:
+                    messages.error(request, '⚠️ Demasiados intentos fallidos. Tu acceso ha sido temporalmente bloqueado por 15 minutos.')
+                else:
+                    messages.error(request, '❌ Usuario o contraseña incorrectos. Por favor, verifica tus credenciales.')
+                    if attempts >= 3:
+                        messages.warning(request, f'⚠️ Advertencia: {5 - attempts} intentos restantes antes del bloqueo temporal.')
         else:
+            # Incrementar contador de intentos fallidos (formulario inválido)
+            attempts = cache.get(cache_key, 0) + 1
+            cache.set(cache_key, attempts, 900)  # 15 minutos
             messages.error(request, 'Por favor, corrige los errores en el formulario.')
     else:
         form = AuthenticationForm()

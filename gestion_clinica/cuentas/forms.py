@@ -55,8 +55,8 @@ class RegistroClienteForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         # Todos los campos son obligatorios
         self.fields['email'].required = True
-        # Simplificar las validaciones de contraseña
-        self.fields['password1'].help_text = "Cualquier contraseña (mínimo 1 carácter)"
+        # Mensajes de ayuda para contraseña con validaciones
+        self.fields['password1'].help_text = "Mínimo 8 caracteres. No debe ser similar a tu nombre de usuario ni ser una contraseña común."
         self.fields['password2'].help_text = "Repite la misma contraseña"
         # Configurar campo de teléfono
         self.fields['telefono'].widget.attrs.update({
@@ -137,17 +137,39 @@ class RegistroClienteForm(UserCreationForm):
         return alergias
 
     def clean_password1(self):
+        """
+        Valida la contraseña usando los validadores de Django configurados en settings.py
+        """
         password1 = self.cleaned_data.get('password1')
-        if password1 and len(password1) < 1:
-            raise forms.ValidationError("La contraseña debe tener al menos 1 carácter")
+        if not password1:
+            raise forms.ValidationError("La contraseña es requerida")
+        
+        # Ejecutar validadores de Django (mínimo 8 caracteres, no similar a username, etc.)
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        
+        try:
+            validate_password(password1, self.instance)
+        except DjangoValidationError as e:
+            raise forms.ValidationError(e.messages)
+        
         return password1
 
     def clean_password2(self):
+        """
+        Valida que las contraseñas coincidan y ejecuta las validaciones de Django
+        """
         password1 = self.cleaned_data.get('password1')
         password2 = self.cleaned_data.get('password2')
+        
+        if not password2:
+            raise forms.ValidationError("La confirmación de contraseña es requerida")
+        
         if password1 and password2 and password1 != password2:
             raise forms.ValidationError("Las contraseñas no coinciden")
-        return password2
+        
+        # Ejecutar validaciones de Django (similitud con username, contraseñas comunes, etc.)
+        return super().clean_password2()
 
     def save(self, commit=True):
         user = super().save(commit=False)

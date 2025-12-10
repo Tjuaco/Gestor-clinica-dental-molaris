@@ -103,15 +103,14 @@ class RegistroTrabajadorForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Personalizar mensajes de ayuda (simplificados)
+        # Personalizar mensajes de ayuda
         self.fields['username'].help_text = 'Requerido. El nombre de usuario debe ser único.'
-        self.fields['password1'].help_text = 'Requerido. Puede ser cualquier contraseña.'
+        self.fields['password1'].help_text = 'Requerido. Mínimo 8 caracteres. No debe ser similar a tu nombre de usuario ni ser una contraseña común.'
         self.fields['password2'].help_text = 'Ingresa la misma contraseña para verificación'
         
-        # Desactivar TODOS los validadores de contraseña de Django
-        # Esto evita las validaciones de similitud con username, contraseñas comunes, etc.
-        self.fields['password1'].validators = []
-        self.fields['password2'].validators = []
+        # Los validadores de contraseña de Django están activos (configurados en settings.py)
+        # AUTH_PASSWORD_VALIDATORS incluye: UserAttributeSimilarityValidator, MinimumLengthValidator,
+        # CommonPasswordValidator, y NumericPasswordValidator
         
         # Agregar clases CSS a todos los campos
         for field_name, field in self.fields.items():
@@ -180,17 +179,27 @@ class RegistroTrabajadorForm(UserCreationForm):
         return telefono_normalizado
     
     def clean_password1(self):
+        """
+        Valida la contraseña usando los validadores de Django configurados en settings.py
+        """
         password1 = self.cleaned_data.get('password1')
         if not password1:
             raise forms.ValidationError('La contraseña es requerida.')
         
-        # Sin restricciones adicionales - solo verificar que no esté vacía
+        # Ejecutar validadores de Django (mínimo 8 caracteres, no similar a username, etc.)
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        
+        try:
+            validate_password(password1, self.instance)
+        except DjangoValidationError as e:
+            raise forms.ValidationError(e.messages)
+        
         return password1
     
     def clean_password2(self):
         """
-        Valida que las contraseñas coincidan, pero NO ejecuta las validaciones
-        de Django sobre similitud con username o contraseñas comunes.
+        Valida que las contraseñas coincidan y ejecuta las validaciones de Django
         """
         password1 = self.cleaned_data.get('password1')
         password2 = self.cleaned_data.get('password2')
@@ -202,10 +211,8 @@ class RegistroTrabajadorForm(UserCreationForm):
             if password1 != password2:
                 raise forms.ValidationError('Las contraseñas no coinciden.')
         
-        # IMPORTANTE: NO llamar a super().clean_password2() porque ejecuta
-        # las validaciones de Django (similitud con username, contraseñas comunes, etc.)
-        # Solo retornamos password2 sin validaciones adicionales
-        return password2
+        # Ejecutar validaciones de Django (similitud con username, contraseñas comunes, etc.)
+        return super().clean_password2()
 
     def save(self, commit=True):
         user = super().save(commit=False)
