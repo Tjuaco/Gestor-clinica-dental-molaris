@@ -22,47 +22,43 @@ def registro_cliente(request):
         try:
             form = RegistroClienteForm(request.POST)
             if form.is_valid():
-            # Guardar datos en sesión para verificación
-            telefono_normalizado = _normalizar_telefono_chile(form.cleaned_data['telefono'])
-            email = form.cleaned_data['email']
-            
-            # Generar código de verificación
-            try:
-                codigo_obj = CodigoVerificacion.generar_codigo(telefono_normalizado)
+                # Guardar datos en sesión para verificación
+                telefono_normalizado = _normalizar_telefono_chile(form.cleaned_data['telefono'])
+                email = form.cleaned_data['email']
                 
-                # Enviar código por email
+                # Generar código de verificación
                 try:
-                    enviar_codigo_por_email(email, codigo_obj.codigo)
-                    mensaje_exito = f'Código de verificación enviado por email a {email}. Por favor, revisa tu correo e ingresa el código recibido.'
+                    codigo_obj = CodigoVerificacion.generar_codigo(telefono_normalizado)
+                    
+                    # Enviar código por email
+                    try:
+                        enviar_codigo_por_email(email, codigo_obj.codigo)
+                        mensaje_exito = f'Código de verificación enviado por email a {email}. Por favor, revisa tu correo e ingresa el código recibido.'
+                        
+                    except Exception as e:
+                        logger.error(f"Error al enviar código de verificación: {str(e)}")
+                        messages.error(request, f'Error al enviar código de verificación: {str(e)}. Por favor, verifica tus datos e intenta nuevamente.')
+                        return render(request, 'cuentas/registro_cliente.html', {'form': form})
+                    
+                    # Guardar datos del formulario en sesión
+                    request.session['registro_data'] = {
+                        'username': form.cleaned_data['username'],
+                        'email': form.cleaned_data['email'],
+                        'password': form.cleaned_data['password1'],
+                        'nombre_completo': form.cleaned_data['nombre_completo'],
+                        'telefono': form.cleaned_data['telefono'],
+                        'rut': form.cleaned_data.get('rut'),
+                        'fecha_nacimiento': form.cleaned_data.get('fecha_nacimiento').isoformat() if form.cleaned_data.get('fecha_nacimiento') else None,
+                        'alergias': form.cleaned_data.get('alergias'),
+                    }
+                    
+                    messages.success(request, mensaje_exito)
+                    return redirect('verificar_telefono')
                     
                 except Exception as e:
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Error al enviar código de verificación: {str(e)}")
-                    messages.error(request, f'Error al enviar código de verificación: {str(e)}. Por favor, verifica tus datos e intenta nuevamente.')
+                    logger.error(f"Error al generar código de verificación: {str(e)}")
+                    messages.error(request, f'Error al generar código de verificación: {str(e)}')
                     return render(request, 'cuentas/registro_cliente.html', {'form': form})
-                
-                # Guardar datos del formulario en sesión
-                request.session['registro_data'] = {
-                    'username': form.cleaned_data['username'],
-                    'email': form.cleaned_data['email'],
-                    'password': form.cleaned_data['password1'],
-                    'nombre_completo': form.cleaned_data['nombre_completo'],
-                    'telefono': form.cleaned_data['telefono'],
-                    'rut': form.cleaned_data.get('rut'),
-                    'fecha_nacimiento': form.cleaned_data.get('fecha_nacimiento').isoformat() if form.cleaned_data.get('fecha_nacimiento') else None,
-                    'alergias': form.cleaned_data.get('alergias'),
-                }
-                
-                messages.success(request, mensaje_exito)
-                return redirect('verificar_telefono')
-                
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error al generar código de verificación: {str(e)}")
-                messages.error(request, f'Error al generar código de verificación: {str(e)}')
-                return render(request, 'cuentas/registro_cliente.html', {'form': form})
             else:
                 # El formulario no es válido (tiene errores de validación)
                 # Los errores se mostrarán automáticamente en el template

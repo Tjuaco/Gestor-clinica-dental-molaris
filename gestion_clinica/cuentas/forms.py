@@ -196,8 +196,19 @@ class RegistroClienteForm(UserCreationForm):
         if password1 and password2 and password1 != password2:
             raise forms.ValidationError("Las contraseñas no coinciden")
         
-        # Ejecutar validaciones de Django (similitud con username, contraseñas comunes, etc.)
-        return super().clean_password2()
+        # Ejecutar validaciones de Django usando validate_password
+        # No llamamos a super().clean_password2() porque UserCreationForm no lo tiene
+        # En su lugar, validamos password1 que ya tiene todas las validaciones
+        if password1:
+            from django.contrib.auth.password_validation import validate_password
+            from django.core.exceptions import ValidationError as DjangoValidationError
+            
+            try:
+                validate_password(password1, self.instance)
+            except DjangoValidationError as e:
+                raise forms.ValidationError(e.messages)
+        
+        return password2
 
     def save(self, commit=True):
         user = super().save(commit=False)
