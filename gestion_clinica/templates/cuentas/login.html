@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Iniciar Sesión - Clínica San Felipe</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -390,5 +393,34 @@
             Tu información está protegida con encriptación SSL
         </div>
     </div>
+
+    <script>
+        // Prevenir que el botón "atrás" del navegador muestre contenido en caché
+        // Esto es especialmente importante después de cerrar sesión
+        (function() {
+            // Si el usuario intenta usar el botón "atrás", forzar recarga desde el servidor
+            window.addEventListener('pageshow', function(event) {
+                // pageshow se dispara cuando la página se carga desde el caché (botón atrás)
+                if (event.persisted) {
+                    // La página fue cargada desde el caché, recargar desde el servidor
+                    window.location.reload();
+                }
+            });
+
+            // Prevenir que se almacene en el historial del navegador después del logout
+            // Si hay un parámetro que indique que venimos del logout, limpiar historial
+            if (window.performance && window.performance.navigation.type === 2) {
+                // Tipo 2 = back_forward (usuario usó botón atrás/adelante)
+                // Forzar recarga para asegurar que tenemos la versión más reciente
+                window.location.replace(window.location.href);
+            }
+
+            // Agregar listener para el evento popstate (cuando el usuario navega en el historial)
+            window.addEventListener('popstate', function(event) {
+                // Si el usuario intenta volver atrás, redirigir al login
+                window.location.href = '{% url "login_cliente" %}';
+            });
+        })();
+    </script>
 </body>
 </html>

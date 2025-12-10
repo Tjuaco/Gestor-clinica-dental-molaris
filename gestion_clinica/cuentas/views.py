@@ -340,7 +340,12 @@ def login_cliente(request):
         messages.error(request, '⚠️ Demasiados intentos fallidos. Por favor, espera 15 minutos antes de intentar nuevamente.')
         logger.warning(f'Login cliente bloqueado por rate limiting - IP: {ip_address}')
         form = AuthenticationForm()
-        return render(request, 'cuentas/login.html', {'form': form})
+        response = render(request, 'cuentas/login.html', {'form': form})
+        # Agregar headers anti-caché
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
     
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -425,21 +430,42 @@ def login_cliente(request):
     else:
         form = AuthenticationForm()
     
-    return render(request, 'cuentas/login.html', {'form': form})
+    # Crear respuesta con headers anti-caché
+    response = render(request, 'cuentas/login.html', {'form': form})
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    response['X-Frame-Options'] = 'DENY'
+    return response
 
 
 @login_required
 def logout_cliente(request):
     """Vista para cerrar sesión de clientes con protección contra caché del navegador"""
+    # Cerrar sesión primero
     logout(request)
     messages.success(request, 'Has cerrado sesión correctamente.')
-    # Agregar headers para prevenir caché del navegador y evitar que el botón "atrás" muestre contenido
-    response = redirect('login_cliente')
-    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    
+    # Usar HttpResponseRedirect con URL absoluta para evitar cualquier redirección por configuración
+    from django.http import HttpResponseRedirect
+    from django.urls import reverse
+    
+    # Obtener la URL absoluta del login de clientes
+    login_url = reverse('login_cliente')
+    
+    # Crear respuesta de redirección con headers anti-caché agresivos
+    response = HttpResponseRedirect(login_url)
+    
+    # Headers para prevenir caché del navegador (muy agresivos)
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
-    # Agregar header adicional para prevenir que se almacene en historial
     response['X-Frame-Options'] = 'DENY'
+    response['X-Content-Type-Options'] = 'nosniff'
+    
+    # Agregar header para prevenir que se almacene en historial del navegador
+    response['Clear-Site-Data'] = '"cache", "cookies", "storage"'
+    
     return response
 
 
