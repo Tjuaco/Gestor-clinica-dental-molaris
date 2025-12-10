@@ -430,9 +430,17 @@ def login_cliente(request):
 
 @login_required
 def logout_cliente(request):
+    """Vista para cerrar sesión de clientes con protección contra caché del navegador"""
     logout(request)
     messages.success(request, 'Has cerrado sesión correctamente.')
-    return redirect('login_cliente')
+    # Agregar headers para prevenir caché del navegador y evitar que el botón "atrás" muestre contenido
+    response = redirect('login_cliente')
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    # Agregar header adicional para prevenir que se almacene en historial
+    response['X-Frame-Options'] = 'DENY'
+    return response
 
 
 

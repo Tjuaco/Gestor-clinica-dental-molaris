@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.utils import timezone
 from django.db.models import Count, Q, F, Sum, Avg
 from datetime import datetime, timedelta
@@ -17,6 +17,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.utils.decorators import method_decorator
 from django.conf import settings
+from functools import wraps
 import logging
 import time
 
@@ -122,6 +123,48 @@ from .views_dashboard import (
     exportar_excel_finanzas
 )
 
+# ============================================================================
+# DECORADORES DE SEGURIDAD
+# ============================================================================
+
+def login_required_trabajador(view_func):
+    """
+    Decorador personalizado para vistas de trabajadores que verifica que el usuario
+    sea un trabajador (tenga Perfil), no un cliente (PerfilCliente).
+    Si un cliente intenta acceder, se cierra su sesión y se redirige al login de clientes.
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            # Usuario no autenticado, redirigir al login de trabajadores
+            messages.info(request, 'Por favor, inicia sesión para acceder a esta sección.')
+            return redirect('login')
+        
+        # Usuario autenticado, verificar que sea trabajador (tenga Perfil, no PerfilCliente)
+        try:
+            # Verificar que tenga Perfil (es trabajador)
+            perfil = Perfil.objects.get(user=request.user)
+            if not perfil.activo:
+                messages.error(request, 'Tu cuenta de trabajador está desactivada. Contacta al administrador.')
+                logout(request)
+                return redirect('login')
+            # Si tiene Perfil activo, ejecutar la vista normalmente
+            return view_func(request, *args, **kwargs)
+        except Perfil.DoesNotExist:
+            # Si no tiene Perfil, verificar si es cliente
+            if PerfilCliente and PerfilCliente.objects.filter(user=request.user).exists():
+                # Es un cliente intentando acceder a área de trabajadores
+                logout(request)
+                messages.warning(request, 'Esta sección es solo para trabajadores. Por favor, inicia sesión con tu cuenta de trabajador.')
+                return redirect('login_cliente')
+            else:
+                # Usuario sin perfil válido
+                messages.error(request, 'No tienes un perfil válido en el sistema.')
+                logout(request)
+                return redirect('login')
+    return wrapper
+
+
 # Página de inicio (redirige al login)
 def inicio(request):
     """Vista de inicio para trabajadores - redirige al login de trabajadores"""
@@ -133,7 +176,14 @@ class TrabajadorLoginView(LoginView):
     template_name = 'citas/auth/login.html'
     
     def dispatch(self, *args, **kwargs):
-        """Aplicar protección de rate limiting"""
+        """Aplicar protección de rate limiting y verificar que no sea cliente"""
+        # Si el usuario ya está autenticado y es cliente, redirigir
+        if self.request.user.is_authenticated:
+            if PerfilCliente and PerfilCliente.objects.filter(user=self.request.user).exists():
+                logout(self.request)
+                messages.info(self.request, 'Esta sección es solo para trabajadores. Por favor, inicia sesión con tu cuenta de trabajador.')
+                return redirect('login_cliente')
+        
         # Obtener IP del cliente
         ip_address = self.get_client_ip()
         
@@ -201,9 +251,17 @@ class TrabajadorLoginView(LoginView):
     
     def form_valid(self, form):
         """Limpiar contador de intentos fallidos al iniciar sesión exitosamente"""
+        user = form.get_user()
+        
+        # Verificar que el usuario sea trabajador, no cliente
+        if PerfilCliente and PerfilCliente.objects.filter(user=user).exists():
+            # Es un cliente intentando iniciar sesión como trabajador
+            messages.error(self.request, 'Esta sección es solo para trabajadores. Por favor, inicia sesión en la página de clientes.')
+            return redirect('login_cliente')
+        
         # Si hay una sesión activa con un usuario diferente, cerrarla
         # Esto permite tener múltiples pestañas con diferentes usuarios
-        if self.request.user.is_authenticated and self.request.user != form.get_user():
+        if self.request.user.is_authenticated and self.request.user != user:
             from django.contrib.auth import logout
             logout(self.request)
         
@@ -212,21 +270,23 @@ class TrabajadorLoginView(LoginView):
         cache.delete(cache_key)
         
         # Log de login exitoso
-        logger.info(f'Login exitoso - Usuario: {form.get_user().username}, IP: {ip_address}')
+        logger.info(f'Login exitoso - Usuario: {user.username}, IP: {ip_address}')
         
         # Registrar en auditoría
         try:
-            perfil = Perfil.objects.get(user=form.get_user())
+            perfil = Perfil.objects.get(user=user)
             registrar_auditoria(
                 usuario=perfil,
                 accion='login',
                 modulo='sistema',
                 descripcion=f'Inicio de sesión exitoso: {perfil.nombre_completo}',
-                detalles=f'Usuario: {form.get_user().username}',
+                detalles=f'Usuario: {user.username}',
                 request=self.request
             )
         except Perfil.DoesNotExist:
-            pass  # Si no hay perfil, no registrar (puede ser un usuario sin perfil)
+            # Si no tiene Perfil, no es un trabajador válido
+            messages.error(self.request, 'No tienes un perfil de trabajador válido.')
+            return redirect('login')
         
         return super().form_valid(form)
 
@@ -249,7 +309,7 @@ class TrabajadorLoginView(LoginView):
             return reverse_lazy('login')
 
 # Panel trabajador (recepción/dentista)
-@login_required
+@login_required_trabajador
 def panel_trabajador(request):
     # Redirigir a la nueva vista de citas del día con navbar lateral
     # Mantener compatibilidad con parámetro tab para redireccionar correctamente
@@ -2124,7 +2184,7 @@ def eliminar_cita(request, cita_id):
 # VISTAS SEPARADAS PARA GESTIÓN DE CITAS CON NAVBAR LATERAL
 # ==========================================
 
-@login_required
+@login_required_trabajador
 def citas_dia(request):
     """Vista para citas del día con navbar lateral"""
     try:
@@ -2520,7 +2580,7 @@ def editar_perfil(request):
     return render(request, 'citas/perfil/editar_perfil.html', {'form': form, 'perfil': perfil})
 
 # Dashboard con estadísticas
-@login_required
+@login_required_trabajador
 def dashboard(request):
     """Vista principal del Dashboard - Página de inicio del sistema"""
     try:
@@ -2658,7 +2718,7 @@ def dashboard(request):
     return render(request, 'citas/dashboard/dashboard.html', context)
 
 # Dashboard específico para dentistas
-@login_required
+@login_required_trabajador
 def dashboard_dentista(request):
     """Vista de inicio específica para dentistas con accesos rápidos"""
     try:
@@ -4838,10 +4898,15 @@ def exportar_insumos_pdf(request):
 
 # Vista personalizada de logout
 def custom_logout(request):
-    """Vista personalizada para cerrar sesión"""
+    """Vista personalizada para cerrar sesión de trabajadores"""
     logout(request)
     messages.success(request, 'Has cerrado sesión correctamente.')
-    return redirect('login')
+    # Agregar headers para prevenir caché del navegador
+    response = redirect('login')
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
 
 # ========== GESTIÓN DE PACIENTES POR DENTISTA ==========
 
