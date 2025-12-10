@@ -62,9 +62,21 @@ def registro_cliente(request):
                 logger.error(f"Error al generar código de verificación: {str(e)}")
                 messages.error(request, f'Error al generar código de verificación: {str(e)}')
                 return render(request, 'cuentas/registro_cliente.html', {'form': form})
+        else:
+            # El formulario no es válido (tiene errores de validación)
+            # Los errores se mostrarán automáticamente en el template
+            pass
     else:
         form = RegistroClienteForm()
-    return render(request, 'cuentas/registro_cliente.html', {'form': form})
+    
+    # Renderizar el formulario (con errores si los hay)
+    try:
+        return render(request, 'cuentas/registro_cliente.html', {'form': form})
+    except Exception as e:
+        logger.error(f"Error al renderizar formulario de registro: {str(e)}")
+        messages.error(request, 'Ha ocurrido un error al procesar el formulario. Por favor, intenta nuevamente.')
+        form = RegistroClienteForm()  # Crear formulario limpio en caso de error
+        return render(request, 'cuentas/registro_cliente.html', {'form': form})
 
 # ========================================
 # FUNCIONES DE VERIFICACIÓN ACTIVADAS
