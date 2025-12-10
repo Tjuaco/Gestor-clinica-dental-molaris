@@ -425,8 +425,16 @@ def login_cliente(request):
                 if not settings.DEBUG:  # Solo en producción
                     time.sleep(0.1)
                 
+                # Verificar si ya alcanzó el límite después de incrementar
                 if attempts >= 5:
-                    messages.error(request, '⚠️ Demasiados intentos fallidos. Tu acceso ha sido temporalmente bloqueado por 15 minutos.')
+                    messages.error(request, '⚠️ Demasiados intentos fallidos. Tu acceso ha sido temporalmente bloqueado por 15 minutos. Por favor, espera antes de intentar nuevamente.')
+                    # Renderizar formulario bloqueado
+                    form = AuthenticationForm()
+                    response = render(request, 'cuentas/login.html', {'form': form})
+                    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
+                    response['Pragma'] = 'no-cache'
+                    response['Expires'] = '0'
+                    return response
                 else:
                     messages.error(request, '❌ Usuario o contraseña incorrectos. Por favor, verifica tus credenciales.')
                     if attempts >= 3:
@@ -435,7 +443,12 @@ def login_cliente(request):
             # Incrementar contador de intentos fallidos (formulario inválido)
             attempts = cache.get(cache_key, 0) + 1
             cache.set(cache_key, attempts, 900)  # 15 minutos
-            messages.error(request, 'Por favor, corrige los errores en el formulario.')
+            
+            # Verificar si ya alcanzó el límite
+            if attempts >= 5:
+                messages.error(request, '⚠️ Demasiados intentos fallidos. Tu acceso ha sido temporalmente bloqueado por 15 minutos. Por favor, espera antes de intentar nuevamente.')
+            else:
+                messages.error(request, 'Por favor, corrige los errores en el formulario.')
     else:
         form = AuthenticationForm()
     

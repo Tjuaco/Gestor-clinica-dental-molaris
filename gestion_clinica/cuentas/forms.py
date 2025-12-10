@@ -122,6 +122,16 @@ class RegistroClienteForm(UserCreationForm):
         email = self.cleaned_data.get('email', '').strip()
         if not email:
             raise forms.ValidationError("El email es obligatorio")
+        
+        # Verificar que el email no esté ya registrado
+        from django.contrib.auth.models import User
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Este email ya está registrado en el sistema. Si ya tienes cuenta, inicia sesión.")
+        
+        # También verificar en PerfilCliente
+        if PerfilCliente.objects.filter(email=email).exists():
+            raise forms.ValidationError("Este email ya está registrado en el sistema. Si ya tienes cuenta, inicia sesión.")
+        
         return email
     
     def clean_fecha_nacimiento(self):
