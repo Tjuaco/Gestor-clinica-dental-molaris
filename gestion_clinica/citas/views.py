@@ -588,12 +588,19 @@ def agregar_hora(request):
                         # Normalizar teléfono si se proporcionó
                         paciente_telefono = None
                         if paciente_telefono_raw:
-                            paciente_telefono = normalizar_telefono_chileno(paciente_telefono_raw)
-                            if not paciente_telefono:
-                                return JsonResponse({
-                                    'success': False, 
-                                    'error': f'El número de teléfono "{paciente_telefono_raw}" no es válido. Por favor, ingrese un número de celular chileno de 8 dígitos (ejemplo: 20589344).'
-                                }, status=400)
+                            # Limpiar el teléfono antes de normalizar (puede venir con espacios, guiones, etc.)
+                            telefono_limpio = paciente_telefono_raw.replace(' ', '').replace('-', '').replace('(', '').replace(')', '').replace('.', '').replace('+', '')
+                            # Si ya está normalizado (empieza con 569 y tiene 11 dígitos), usarlo directamente
+                            if telefono_limpio.startswith('569') and len(telefono_limpio) == 11:
+                                paciente_telefono = f"+{telefono_limpio}"
+                            else:
+                                # Intentar normalizar desde formato de 8 dígitos
+                                paciente_telefono = normalizar_telefono_chileno(paciente_telefono_raw)
+                                if not paciente_telefono:
+                                    return JsonResponse({
+                                        'success': False, 
+                                        'error': f'El número de teléfono "{paciente_telefono_raw}" no es válido. Por favor, ingrese un número de celular chileno de 8 dígitos (ejemplo: 20589344).'
+                                    }, status=400)
                         
                         try:
                             # Si no se proporcionó teléfono, usar uno por defecto válido
