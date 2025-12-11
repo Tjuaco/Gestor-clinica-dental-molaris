@@ -526,7 +526,7 @@ def agregar_hora(request):
             citas_existentes = Cita.objects.filter(
                 dentista=dentista,
                 fecha_hora__date=fecha_hora.date(),
-                estado__in=['disponible', 'reservada', 'confirmada']
+                estado__in=['disponible', 'reservada', 'confirmada', 'en_progreso']
             ).exclude(id=None)  # Excluir la cita actual si se está editando
             
             for cita_existente in citas_existentes:
