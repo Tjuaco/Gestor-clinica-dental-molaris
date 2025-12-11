@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.http import JsonResponse
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 from decimal import Decimal
 from proveedores.models import Proveedor, SolicitudInsumo, Pedido
@@ -3783,6 +3784,7 @@ Clínica San Felipe
 
 
 @login_required
+@csrf_exempt
 def marcar_solicitud_recibida(request, solicitud_id):
     """Vista AJAX para marcar una solicitud como recibida. Solo cambia el estado visual, no actualiza stock."""
     if request.method != 'POST':
