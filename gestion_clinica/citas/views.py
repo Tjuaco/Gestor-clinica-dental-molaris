@@ -607,8 +607,12 @@ def agregar_hora(request):
                     paciente_email = request.POST.get('paciente_email', '').strip()
                     paciente_telefono_raw = request.POST.get('paciente_telefono', '').strip()
                     
+                    # Log para debugging
+                    logger.info(f"Cliente NUEVO - nombre: '{paciente_nombre}', email: '{paciente_email}', telefono: '{paciente_telefono_raw}'")
+                    
                     # Si no hay nombre o email, no es un cliente nuevo válido
                     if not paciente_nombre or not paciente_email:
+                        logger.warning(f"Intento de crear cliente nuevo sin nombre o email. Retornando error.")
                         return JsonResponse({
                             'success': False, 
                             'error': 'Para crear un nuevo cliente, debe proporcionar al menos el nombre y el email.'
@@ -705,6 +709,7 @@ def agregar_hora(request):
                         }, status=400)
                 elif cliente_id and cliente_id != 'nuevo':
                     # Usar cliente existente
+                    logger.info(f"Cliente EXISTENTE seleccionado - ID: '{cliente_id}'. NO se procesarán campos de paciente_nombre/email/telefono del POST.")
                     try:
                         # Convertir cliente_id a entero
                         cliente_id_int = int(cliente_id)
@@ -713,6 +718,7 @@ def agregar_hora(request):
                         paciente_email = cliente_obj.email
                         paciente_telefono = cliente_obj.telefono
                         estado_cita = 'reservada'
+                        logger.info(f"Cliente existente obtenido: {cliente_obj.nombre_completo}, telefono: {cliente_obj.telefono}")
                     except ValueError:
                         # Si cliente_id no es un número válido
                         logger.error(f"cliente_id no es un número válido: {cliente_id}")
