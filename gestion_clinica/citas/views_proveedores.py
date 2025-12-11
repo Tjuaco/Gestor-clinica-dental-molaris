@@ -3784,16 +3784,9 @@ Clínica San Felipe
 
 @login_required
 def marcar_solicitud_recibida(request, solicitud_id):
-    """Vista AJAX para marcar una solicitud como recibida. Solo cambia el estado y opcionalmente actualiza el stock."""
+    """Vista AJAX para marcar una solicitud como recibida. Solo cambia el estado visual, no actualiza stock."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
-    
-    try:
-        perfil = Perfil.objects.get(user=request.user)
-        if not perfil.es_administrativo():
-            return JsonResponse({'success': False, 'message': 'No tienes permisos para realizar esta acción.'}, status=403)
-    except Perfil.DoesNotExist:
-        return JsonResponse({'success': False, 'message': 'Perfil no encontrado.'}, status=404)
     
     try:
         solicitud = get_object_or_404(SolicitudInsumo, id=solicitud_id)
@@ -3805,14 +3798,11 @@ def marcar_solicitud_recibida(request, solicitud_id):
         if solicitud.estado == 'cancelada':
             return JsonResponse({'success': False, 'message': 'No se puede marcar como recibida una solicitud cancelada.'}, status=400)
         
-        # Cambiar estado a recibida
+        # Solo cambiar el estado a recibida - NO actualizar stock ni hacer nada más
         solicitud.estado = 'recibida'
         solicitud.save()
         
         mensaje = f'✅ Solicitud #{solicitud.id} marcada como recibida.'
-        
-        # NO actualizar stock automáticamente - debe hacerse manualmente desde el inventario
-        # NO crear egresos automáticos - los egresos deben ser manuales
         
         return JsonResponse({
             'success': True,
