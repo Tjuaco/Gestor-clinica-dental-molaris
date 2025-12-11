@@ -577,6 +577,7 @@ def agregar_hora(request):
                         pass  # Usar precio base si el ajuste no es válido
             
             # Manejar asignación de paciente (cliente existente o nuevo)
+            # Inicializar variables de cliente
             cliente_obj = None
             paciente_nombre = None
             paciente_email = None
@@ -587,13 +588,6 @@ def agregar_hora(request):
             asignar_cliente = request.POST.get('asignar_cliente', '') == 'on'
             cliente_id = request.POST.get('cliente_id', '').strip()
             
-            # Inicializar variables de cliente
-            cliente_obj = None
-            paciente_nombre = None
-            paciente_email = None
-            paciente_telefono = None
-            estado_cita = 'disponible'
-            
             # Log para debugging (solo en desarrollo)
             from django.conf import settings
             if settings.DEBUG:
@@ -602,9 +596,17 @@ def agregar_hora(request):
             if asignar_cliente and cliente_id:
                 if cliente_id == 'nuevo':
                     # Crear nuevo cliente - solo si se proporcionaron los datos necesarios
+                    # Solo obtener estos campos si realmente es un cliente nuevo
                     paciente_nombre = request.POST.get('paciente_nombre', '').strip()
                     paciente_email = request.POST.get('paciente_email', '').strip()
                     paciente_telefono_raw = request.POST.get('paciente_telefono', '').strip()
+                    
+                    # Si no hay nombre o email, no es un cliente nuevo válido
+                    if not paciente_nombre or not paciente_email:
+                        return JsonResponse({
+                            'success': False, 
+                            'error': 'Para crear un nuevo cliente, debe proporcionar al menos el nombre y el email.'
+                        }, status=400)
                     
                     if paciente_nombre and paciente_email:
                         # Normalizar teléfono si se proporcionó
