@@ -2284,8 +2284,11 @@ async function eliminarCliente(clienteId, nombreCliente) {
         `¿Estás seguro de que deseas ELIMINAR completamente a "${nombreCliente}"?\n\n` +
         `Esto eliminará:\n` +
         `• El registro del cliente en la clínica\n` +
-        `• Su cuenta de usuario web (si existe)\n` +
-        `• Sus citas NO se eliminarán (quedarán sin cliente)\n\n` +
+        `• Su cuenta de usuario web (si existe)\n\n` +
+        `Se preservará (sin referencia al cliente):\n` +
+        `• Historial clínico (planes, odontogramas, radiografías)\n` +
+        `• Documentos y consentimientos informados\n` +
+        `• Citas (quedarán sin cliente asignado)\n\n` +
         `Esta acción NO se puede deshacer.`
     );
     
@@ -2816,7 +2819,16 @@ document.addEventListener('keydown', function(e) {
                     <ul style="margin: 0; padding-left: 20px; color: #374151;">
                         <li>El registro del cliente en la clínica</li>
                         <li>Su cuenta de usuario web (si existe)</li>
-                        <li>Sus citas NO se eliminarán (quedarán sin cliente)</li>
+                    </ul>
+                </div>
+                <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; text-align: left; margin: 16px 0; border-left: 4px solid #22c55e;">
+                    <p style="margin: 0 0 8px 0; color: #166534; font-weight: 600;">
+                        <i class="fas fa-shield-alt"></i> Se preservará (sin referencia al cliente):
+                    </p>
+                    <ul style="margin: 0; padding-left: 20px; color: #166534;">
+                        <li>Historial clínico (planes de tratamiento, odontogramas, radiografías)</li>
+                        <li>Documentos y consentimientos informados</li>
+                        <li>Citas (quedarán sin cliente asignado)</li>
                     </ul>
                 </div>
                 <p style="margin: 16px 0 0 0; color: #ef4444; font-weight: 600;">
