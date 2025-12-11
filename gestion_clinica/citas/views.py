@@ -4246,6 +4246,27 @@ def eliminar_personal(request, personal_id):
         personal = get_object_or_404(Perfil, id=personal_id)
         nombre_completo = personal.nombre_completo
         
+        # PROTECCIÓN 1: No permitir auto-eliminación
+        if personal.id == perfil_admin.id:
+            messages.error(request, 'No puedes eliminarte a ti mismo. Por favor, solicita a otro administrador que realice esta acción.')
+            return redirect('gestor_personal')
+        
+        # PROTECCIÓN 2: Verificar que siempre haya al menos un administrador activo
+        if personal.rol == 'administrativo' and personal.activo:
+            # Contar cuántos administradores activos quedarían después de eliminar este
+            administradores_activos = Perfil.objects.filter(
+                rol='administrativo',
+                activo=True
+            ).exclude(id=personal_id).count()
+            
+            if administradores_activos == 0:
+                messages.error(
+                    request, 
+                    f'No se puede eliminar a "{nombre_completo}" porque es el último administrador activo del sistema. '
+                    'Debe haber al menos un administrador activo. Si deseas desactivar esta cuenta, usa la opción "Desactivar" en lugar de "Eliminar".'
+                )
+                return redirect('gestor_personal')
+        
         try:
             # Eliminar foto si existe
             if personal.foto:
@@ -10957,6 +10978,17 @@ def eliminar_cliente(request, cliente_id):
         nombre_cliente = cliente.nombre_completo
         email_cliente = cliente.email
         
+        # Verificar si el cliente tiene historial clínico importante
+        from historial_clinico.models import PlanTratamiento, Odontograma, Radiografia, DocumentoCliente, ConsentimientoInformado
+        
+        planes_tratamiento = PlanTratamiento.objects.filter(cliente=cliente).count()
+        odontogramas = Odontograma.objects.filter(cliente=cliente).count()
+        radiografias = Radiografia.objects.filter(cliente=cliente).count()
+        documentos = DocumentoCliente.objects.filter(cliente=cliente).count()
+        consentimientos = ConsentimientoInformado.objects.filter(cliente=cliente).count()
+        
+        tiene_historial = planes_tratamiento > 0 or odontogramas > 0 or radiografias > 0 or documentos > 0 or consentimientos > 0
+        
         # ANTES de eliminar: Manejar las citas reservadas del cliente
         citas_reservadas = cliente.citas.filter(estado='reservada')
         citas_actualizadas = 0
@@ -10975,6 +11007,21 @@ def eliminar_cliente(request, cliente_id):
             cita.estado = 'disponible'
             cita.save()
             citas_actualizadas += 1
+        
+        # Preparar mensaje informativo sobre el historial que se preservará
+        historial_info = []
+        if planes_tratamiento > 0:
+            historial_info.append(f'{planes_tratamiento} plan(es) de tratamiento')
+        if odontogramas > 0:
+            historial_info.append(f'{odontogramas} odontograma(s)')
+        if radiografias > 0:
+            historial_info.append(f'{radiografias} radiografía(s)')
+        if documentos > 0:
+            historial_info.append(f'{documentos} documento(s)')
+        if consentimientos > 0:
+            historial_info.append(f'{consentimientos} consentimiento(s)')
+        
+        historial_preservado = ', '.join(historial_info) if historial_info else 'ninguno'
         
         # Verificar relaciones antes de eliminar (para debugging)
         try:
@@ -11128,6 +11175,8 @@ def eliminar_cliente(request, cliente_id):
             detalles_eliminacion += f', {citas_actualizadas} cita(s) actualizada(s)'
         if usuario_web_eliminado:
             detalles_eliminacion += ', Usuario web eliminado'
+        if tiene_historial:
+            detalles_eliminacion += f', Historial preservado: {historial_preservado}'
         registrar_auditoria(
             usuario=perfil,
             accion='eliminar',
@@ -11140,6 +11189,8 @@ def eliminar_cliente(request, cliente_id):
         )
         
         # Eliminar el cliente
+        # NOTA: Con los cambios en los modelos (SET_NULL), el historial clínico se preservará
+        # pero quedará sin referencia al cliente (cliente=NULL)
         cliente.delete()
         
         # Mensaje de confirmación
@@ -11148,6 +11199,8 @@ def eliminar_cliente(request, cliente_id):
             mensaje += f' {citas_actualizadas} cita(s) reservada(s) fueron marcadas como disponibles.'
         if usuario_web_eliminado:
             mensaje += ' Su cuenta de usuario web también fue eliminada.'
+        if tiene_historial:
+            mensaje += f' El historial clínico ha sido preservado ({historial_preservado}) pero quedó sin referencia al cliente.'
         
         return JsonResponse({
             'success': True,

@@ -241,7 +241,9 @@ class PlanTratamiento(models.Model):
     # Relaciones principales
     cliente = models.ForeignKey(
         Cliente, 
-        on_delete=models.CASCADE, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        blank=True,
         related_name='planes_tratamiento',
         verbose_name="Cliente"
     )
@@ -652,7 +654,7 @@ class DocumentoCliente(models.Model):
     # Relación con cliente (opcional - algunos documentos pueden no tener cliente asociado)
     cliente = models.ForeignKey(
         Cliente,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='documentos',
         verbose_name="Cliente",
         null=True,
@@ -882,7 +884,9 @@ class ConsentimientoInformado(models.Model):
     # Relación con cliente
     cliente = models.ForeignKey(
         Cliente,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='consentimientos',
         verbose_name="Cliente"
     )
