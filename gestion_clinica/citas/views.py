@@ -541,10 +541,18 @@ def agregar_hora(request):
                 # Nueva cita empieza antes de que termine la existente Y termina después de que empiece la existente
                 if (fecha_hora < fecha_hora_existente_fin and fecha_hora_fin > cita_existente.fecha_hora):
                     # Obtener información de la cita existente para el mensaje
+                    # Usar timezone.localtime para mostrar la hora en la zona horaria local
+                    from django.utils import timezone as tz
+                    fecha_hora_existente_local = tz.localtime(cita_existente.fecha_hora)
+                    hora_inicio_existente = fecha_hora_existente_local.strftime("%H:%M")
+                    hora_fin_existente = tz.localtime(fecha_hora_existente_fin).strftime("%H:%M")
+                    
                     cliente_info = cita_existente.cliente.nombre_completo if cita_existente.cliente else cita_existente.paciente_nombre or "Sin cliente"
+                    servicio_info = cita_existente.tipo_servicio.nombre if cita_existente.tipo_servicio else cita_existente.tipo_consulta or "Sin servicio"
+                    
                     return JsonResponse({
                         'success': False, 
-                        'error': f'La cita se solapa con otra cita existente del dentista a las {cita_existente.fecha_hora.strftime("%H:%M")} (Cliente: {cliente_info}). Por favor, seleccione otra hora.'
+                        'error': f'La cita se solapa con otra cita existente del dentista de {hora_inicio_existente} a {hora_fin_existente} (Cliente: {cliente_info}, Servicio: {servicio_info}). Por favor, seleccione otra hora.'
                     }, status=400)
             
             # Verificar que no exista ya una cita en esa fecha/hora exacta
