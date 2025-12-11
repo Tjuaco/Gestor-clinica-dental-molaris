@@ -550,10 +550,16 @@ def agregar_hora(request):
                     cliente_info = cita_existente.cliente.nombre_completo if cita_existente.cliente else cita_existente.paciente_nombre or "Sin cliente"
                     servicio_info = cita_existente.tipo_servicio.nombre if cita_existente.tipo_servicio else cita_existente.tipo_consulta or "Sin servicio"
                     
-                    return JsonResponse({
+                    # Log para debugging
+                    logger.warning(f"SOLAPAMIENTO DETECTADO: Nueva cita {fecha_hora} se solapa con cita existente {cita_existente.fecha_hora} (ID: {cita_existente.id})")
+                    
+                    # Retornar error y DETENER la ejecución
+                    response = JsonResponse({
                         'success': False, 
                         'error': f'La cita se solapa con otra cita existente del dentista de {hora_inicio_existente} a {hora_fin_existente} (Cliente: {cliente_info}, Servicio: {servicio_info}). Por favor, seleccione otra hora.'
                     }, status=400)
+                    logger.warning(f"Retornando respuesta de error de solapamiento. La cita NO debe crearse.")
+                    return response
             
             # Verificar que no exista ya una cita en esa fecha/hora exacta
             if Cita.objects.filter(fecha_hora=fecha_hora).exists():
