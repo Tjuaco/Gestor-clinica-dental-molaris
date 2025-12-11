@@ -822,12 +822,13 @@ def agregar_hora(request):
             # Si todo salió bien, devolver JSON para que el modal muestre el mensaje
             if estado_cita == 'reservada':
                 mensaje = f'Cita creada y asignada a {paciente_nombre} para {dentista.nombre_completo}.'
-                # Las notificaciones ya se enviaron arriba (línea 692), no duplicar
-                if telefono_para_notificacion or cita.paciente_email:
+                # Las notificaciones ya se enviaron arriba, verificar si se enviaron
+                if cita.paciente_email:
                     mensaje += ' Se han enviado notificaciones al paciente.'
             else:
                 mensaje = f'Cita creada correctamente para {dentista.nombre_completo}.'
             
+            logger.info(f"Retornando respuesta exitosa para cita {cita.id}")
             return JsonResponse({'success': True, 'message': mensaje})
             
         except ValueError as e:
