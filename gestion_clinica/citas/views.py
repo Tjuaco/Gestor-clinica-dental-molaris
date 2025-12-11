@@ -10958,6 +10958,10 @@ def eliminar_cliente(request, cliente_id):
     También elimina su cuenta de usuario web si existe
     ESTA ACCIÓN ES PERMANENTE
     """
+    # Inicializar logger al inicio de la función
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         perfil = Perfil.objects.get(user=request.user)
         if not perfil.es_administrativo():
@@ -11040,9 +11044,6 @@ def eliminar_cliente(request, cliente_id):
         usuario_web_eliminado = False
         
         try:
-            import logging
-            logger = logging.getLogger(__name__)
-            
             # PRIMERO: Intentar usar la relación explícita (nueva mejora)
             if cliente.user:
                 logger.info(f"Encontrado User asociado directamente: {cliente.user.username} (ID: {cliente.user.id})")
@@ -11163,8 +11164,6 @@ def eliminar_cliente(request, cliente_id):
         except Exception as e:
             # Si hay un error en la transacción, se revierte automáticamente
             # Si hay un error al eliminar el usuario, continuar con la eliminación del cliente
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"❌ Error al eliminar usuario web: {str(e)}", exc_info=True)
             import traceback
             logger.error(f"Traceback completo: {traceback.format_exc()}")
