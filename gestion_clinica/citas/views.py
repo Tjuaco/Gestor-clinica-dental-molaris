@@ -523,11 +523,12 @@ def agregar_hora(request):
                 return JsonResponse({'success': False, 'error': f'La duración del servicio ({duracion_minutos} minutos) no cabe en el horario seleccionado. Por favor, seleccione una hora más temprana.'}, status=400)
             
             # Verificar que no se solape con otra cita del mismo dentista
+            # Solo verificar citas activas (no completadas, canceladas o no_show)
             citas_existentes = Cita.objects.filter(
                 dentista=dentista,
                 fecha_hora__date=fecha_hora.date(),
                 estado__in=['disponible', 'reservada', 'confirmada', 'en_progreso']
-            ).exclude(id=None)  # Excluir la cita actual si se está editando
+            ).exclude(estado__in=['completada', 'cancelada', 'no_show', 'finalizada']).exclude(id=None)
             
             for cita_existente in citas_existentes:
                 fecha_hora_existente_fin = cita_existente.fecha_hora
@@ -536,9 +537,15 @@ def agregar_hora(request):
                 else:
                     fecha_hora_existente_fin += timedelta(minutes=30)  # Duración por defecto
                 
-                # Verificar solapamiento
+                # Verificar solapamiento: las citas se solapan si hay intersección en el tiempo
+                # Nueva cita empieza antes de que termine la existente Y termina después de que empiece la existente
                 if (fecha_hora < fecha_hora_existente_fin and fecha_hora_fin > cita_existente.fecha_hora):
-                    return JsonResponse({'success': False, 'error': f'La cita se solapa con otra cita existente del dentista a las {cita_existente.fecha_hora.strftime("%H:%M")}.'}, status=400)
+                    # Obtener información de la cita existente para el mensaje
+                    cliente_info = cita_existente.cliente.nombre_completo if cita_existente.cliente else cita_existente.paciente_nombre or "Sin cliente"
+                    return JsonResponse({
+                        'success': False, 
+                        'error': f'La cita se solapa con otra cita existente del dentista a las {cita_existente.fecha_hora.strftime("%H:%M")} (Cliente: {cliente_info}). Por favor, seleccione otra hora.'
+                    }, status=400)
             
             # Verificar que no exista ya una cita en esa fecha/hora exacta
             if Cita.objects.filter(fecha_hora=fecha_hora).exists():
@@ -571,6 +578,13 @@ def agregar_hora(request):
             # Solo procesar cliente si el checkbox está marcado
             asignar_cliente = request.POST.get('asignar_cliente', '') == 'on'
             cliente_id = request.POST.get('cliente_id', '').strip()
+            
+            # Inicializar variables de cliente
+            cliente_obj = None
+            paciente_nombre = None
+            paciente_email = None
+            paciente_telefono = None
+            estado_cita = 'disponible'
             
             # Log para debugging (solo en desarrollo)
             from django.conf import settings
