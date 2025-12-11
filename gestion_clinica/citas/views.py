@@ -7107,12 +7107,33 @@ def exportar_presupuesto_pdf(request, plan_id):
     paciente_title = Paragraph("<b>INFORMACIÓN DEL PACIENTE</b>", subtitle_style)
     story.append(paciente_title)
     
-    paciente_data = [
-        ['Nombre Completo:', plan.cliente.nombre_completo],
-        ['RUT:', plan.cliente.rut or 'No especificado'],
-        ['Email:', plan.cliente.email or 'No especificado'],
-        ['Teléfono:', plan.cliente.telefono or 'No especificado'],
-    ]
+    # Manejar caso donde el cliente fue eliminado (cliente=NULL)
+    if plan.cliente:
+        paciente_data = [
+            ['Nombre Completo:', plan.cliente.nombre_completo],
+            ['RUT:', plan.cliente.rut or 'No especificado'],
+            ['Email:', plan.cliente.email or 'No especificado'],
+            ['Teléfono:', plan.cliente.telefono or 'No especificado'],
+        ]
+    else:
+        # Si el cliente fue eliminado, usar información del odontograma si existe
+        paciente_nombre = 'Cliente eliminado del sistema'
+        paciente_rut = 'No disponible'
+        paciente_email = 'No disponible'
+        paciente_telefono = 'No disponible'
+        
+        # Intentar obtener información del odontograma inicial si existe
+        if plan.odontograma_inicial:
+            paciente_nombre = plan.odontograma_inicial.paciente_nombre or paciente_nombre
+            paciente_email = plan.odontograma_inicial.paciente_email or paciente_email
+            paciente_telefono = plan.odontograma_inicial.paciente_telefono or paciente_telefono
+        
+        paciente_data = [
+            ['Nombre Completo:', paciente_nombre],
+            ['RUT:', paciente_rut],
+            ['Email:', paciente_email],
+            ['Teléfono:', paciente_telefono],
+        ]
     
     paciente_table = Table(paciente_data, colWidths=[2 * inch, 4.5 * inch])
     paciente_table_style = TableStyle([
@@ -7232,7 +7253,7 @@ def exportar_presupuesto_pdf(request, plan_id):
         plan_tratamiento=plan,
         tipo='presupuesto',
         defaults={
-            'cliente': plan.cliente,
+            'cliente': plan.cliente,  # Puede ser None si el cliente fue eliminado
             'titulo': f'Presupuesto - {plan.nombre}',
             'descripcion': f'Presupuesto del tratamiento {plan.nombre}',
             'generado_por': perfil,
@@ -7241,7 +7262,16 @@ def exportar_presupuesto_pdf(request, plan_id):
     
     # Crear respuesta HTTP
     response = HttpResponse(content_type='application/pdf')
-    filename = f"presupuesto_{plan.cliente.nombre_completo.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+    # Manejar caso donde el cliente fue eliminado
+    if plan.cliente:
+        nombre_cliente_archivo = plan.cliente.nombre_completo.replace(' ', '_')
+    else:
+        # Usar nombre del odontograma o un nombre genérico
+        if plan.odontograma_inicial and plan.odontograma_inicial.paciente_nombre:
+            nombre_cliente_archivo = plan.odontograma_inicial.paciente_nombre.replace(' ', '_')
+        else:
+            nombre_cliente_archivo = 'Cliente_Eliminado'
+    filename = f"presupuesto_{nombre_cliente_archivo}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     response.write(pdf_content)
     
