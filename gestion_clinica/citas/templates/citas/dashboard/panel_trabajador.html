@@ -7250,6 +7250,20 @@ document.addEventListener('DOMContentLoaded', function() {
             var submitBtn = this.querySelector('button[type="submit"]');
             var originalText = submitBtn.innerHTML;
             
+            // Limpiar campos de cliente nuevo si se seleccionó un cliente existente
+            var clienteIdInput = document.getElementById('clienteIdInput');
+            if (clienteIdInput && clienteIdInput.value && clienteIdInput.value !== '' && clienteIdInput.value !== 'nuevo') {
+                // Si hay un cliente_id válido (no es 'nuevo' ni está vacío), eliminar campos de cliente nuevo
+                formData.delete('paciente_nombre');
+                formData.delete('paciente_email');
+                formData.delete('paciente_telefono');
+                console.log('Cliente existente seleccionado, eliminando campos de cliente nuevo del formulario');
+            } else if (clienteIdInput && clienteIdInput.value === 'nuevo') {
+                // Si es cliente nuevo, asegurar que cliente_id sea 'nuevo'
+                formData.set('cliente_id', 'nuevo');
+                console.log('Cliente nuevo seleccionado');
+            }
+            
             // Asegurar que tipo_servicio se envíe correctamente
             var tipoSelect = document.getElementById('addCitaTipo');
             var tipoServicioIdInput = document.getElementById('tipoServicioIdInput');
