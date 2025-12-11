@@ -1957,6 +1957,48 @@ async function validarTelefono() {
     }
 }
 
+// Validar formulario completo antes de enviar
+function validarFormularioCrearCliente() {
+    const form = document.getElementById('formCrearCliente');
+    
+    // Verificar si hay errores de validación visibles
+    const emailError = document.getElementById('email_error');
+    const rutError = document.getElementById('rut_error');
+    const telefonoError = document.getElementById('telefono_error');
+    
+    // Verificar formato de teléfono
+    const telefonoInput = form.querySelector('input[name="telefono"]');
+    if (telefonoInput) {
+        const valor = telefonoInput.value.replace(/[\s\-\(\)\.\+]/g, '');
+        if (valor.length > 0 && (valor.length !== 8 || !/^\d{8}$/.test(valor))) {
+            showNotification('error', 'El número de teléfono no es válido. Ingrese solo los 8 dígitos del celular (ejemplo: 12345678).');
+            telefonoInput.focus();
+            return false;
+        }
+    }
+    
+    // Si hay errores de duplicados, prevenir el envío
+    if (emailError && emailError.style.display === 'block') {
+        showNotification('error', 'Por favor, corrige el error del email antes de continuar.');
+        document.getElementById('email_field').focus();
+        return false;
+    }
+    
+    if (rutError && rutError.style.display === 'block') {
+        showNotification('error', 'Por favor, corrige el error del RUT antes de continuar.');
+        document.getElementById('rut_field').focus();
+        return false;
+    }
+    
+    if (telefonoError && telefonoError.style.display === 'block') {
+        showNotification('error', 'Por favor, corrige el error del teléfono antes de continuar.');
+        telefonoInput.focus();
+        return false;
+    }
+    
+    return true;
+}
+
 // Mostrar/ocultar contraseña
 function togglePasswordVisibility() {
     const passwordField = document.getElementById('password_field');
