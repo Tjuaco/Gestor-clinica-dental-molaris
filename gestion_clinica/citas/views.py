@@ -10148,7 +10148,8 @@ def validar_email(request):
 @login_required
 def validar_rut(request):
     """
-    Vista AJAX para validar si un RUT ya existe en Cliente
+    Vista AJAX para validar si un RUT ya existe en Cliente activo
+    Solo verifica en Clientes activos, no en clientes desactivados
     """
     rut = request.GET.get('rut', '').strip()
     
@@ -10162,9 +10163,10 @@ def validar_rut(request):
     if not rut_limpio[:-1].isdigit() or len(rut_limpio) < 8:
         return JsonResponse({'existe': False, 'invalido': True})
     
-    # Buscar en Cliente (comparar RUTs normalizados)
+    # Buscar en Cliente ACTIVO (comparar RUTs normalizados)
+    # Solo clientes activos bloquean la creación
     existe = False
-    clientes = Cliente.objects.filter(rut__isnull=False).exclude(rut='')
+    clientes = Cliente.objects.filter(rut__isnull=False, activo=True).exclude(rut='')
     for cliente in clientes:
         if cliente.rut:
             rut_cliente_limpio = cliente.rut.replace('.', '').replace('-', '').upper()
@@ -10178,7 +10180,8 @@ def validar_rut(request):
 @login_required
 def validar_telefono(request):
     """
-    Vista AJAX para validar si un teléfono ya existe en Cliente
+    Vista AJAX para validar si un teléfono ya existe en Cliente activo
+    Solo verifica en Clientes activos, no en clientes desactivados
     """
     telefono = request.GET.get('telefono', '').strip()
     
@@ -10191,8 +10194,9 @@ def validar_telefono(request):
     if not telefono_normalizado:
         return JsonResponse({'existe': False, 'invalido': True})
     
-    # Buscar en Cliente
-    existe = Cliente.objects.filter(telefono=telefono_normalizado).exists()
+    # Buscar en Cliente ACTIVO
+    # Solo clientes activos bloquean la creación
+    existe = Cliente.objects.filter(telefono=telefono_normalizado, activo=True).exists()
     
     return JsonResponse({'existe': existe})
 

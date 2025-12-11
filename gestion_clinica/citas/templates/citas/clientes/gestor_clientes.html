@@ -692,7 +692,7 @@
             </button>
         </div>
         <div class="modal-body">
-            <form id="formCrearCliente" method="post" action="{% url 'crear_cliente_presencial' %}" onsubmit="return validarTelefonoAntesEnvio('formCrearCliente')">
+            <form id="formCrearCliente" method="post" action="{% url 'crear_cliente_presencial' %}" onsubmit="return validarFormularioCrearCliente()">
                 {% csrf_token %}
                 <div class="form-group-modal">
                     <label><i class="fas fa-user"></i> Nombre Completo *</label>
