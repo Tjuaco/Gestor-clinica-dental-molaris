@@ -10985,8 +10985,8 @@ def toggle_estado_cliente(request, cliente_id):
 def eliminar_cliente(request, cliente_id):
     """
     Vista para eliminar un cliente del sistema
-    También elimina su cuenta de usuario web si existe
-    ESTA ACCIÓN ES PERMANENTE
+    NO PERMITE eliminar clientes con datos vinculados (historial clínico, tratamientos, etc.)
+    Los clientes con datos vinculados solo pueden ser desactivados
     """
     # Inicializar logger al inicio de la función
     import logging
@@ -11006,13 +11006,10 @@ def eliminar_cliente(request, cliente_id):
         }, status=403)
     
     try:
-        from django.contrib.auth.models import User
-        
         cliente = Cliente.objects.get(id=cliente_id)
         nombre_cliente = cliente.nombre_completo
-        email_cliente = cliente.email
         
-        # Verificar si el cliente tiene historial clínico importante
+        # Verificar si el cliente tiene datos vinculados
         from historial_clinico.models import PlanTratamiento, Odontograma, Radiografia, DocumentoCliente, ConsentimientoInformado
         
         planes_tratamiento = PlanTratamiento.objects.filter(cliente=cliente).count()
@@ -11020,8 +11017,46 @@ def eliminar_cliente(request, cliente_id):
         radiografias = Radiografia.objects.filter(cliente=cliente).count()
         documentos = DocumentoCliente.objects.filter(cliente=cliente).count()
         consentimientos = ConsentimientoInformado.objects.filter(cliente=cliente).count()
+        citas_count = cliente.citas.count()
         
-        tiene_historial = planes_tratamiento > 0 or odontogramas > 0 or radiografias > 0 or documentos > 0 or consentimientos > 0
+        tiene_datos_vinculados = (
+            planes_tratamiento > 0 or 
+            odontogramas > 0 or 
+            radiografias > 0 or 
+            documentos > 0 or 
+            consentimientos > 0 or
+            citas_count > 0
+        )
+        
+        # Si tiene datos vinculados, NO permitir eliminación
+        if tiene_datos_vinculados:
+            datos_vinculados = []
+            if planes_tratamiento > 0:
+                datos_vinculados.append(f'{planes_tratamiento} plan(es) de tratamiento')
+            if odontogramas > 0:
+                datos_vinculados.append(f'{odontogramas} odontograma(s)')
+            if radiografias > 0:
+                datos_vinculados.append(f'{radiografias} radiografía(s)')
+            if documentos > 0:
+                datos_vinculados.append(f'{documentos} documento(s)')
+            if consentimientos > 0:
+                datos_vinculados.append(f'{consentimientos} consentimiento(s)')
+            if citas_count > 0:
+                datos_vinculados.append(f'{citas_count} cita(s)')
+            
+            mensaje_datos = ', '.join(datos_vinculados)
+            
+            return JsonResponse({
+                'success': False,
+                'error': f'No se puede eliminar al cliente "{nombre_cliente}" porque tiene datos vinculados en el sistema: {mensaje_datos}. '
+                         f'Para proteger la integridad de los datos históricos, los clientes con información clínica solo pueden ser desactivados. '
+                         f'Por favor, usa la opción "Desactivar" en lugar de "Eliminar".'
+            }, status=400)
+        
+        # Si llegamos aquí, el cliente NO tiene datos vinculados y puede ser eliminado
+        # (Solo clientes sin historial pueden ser eliminados - caso muy raro)
+        from django.contrib.auth.models import User
+        email_cliente = cliente.email
         
         # ANTES de eliminar: Manejar las citas reservadas del cliente
         citas_reservadas = cliente.citas.filter(estado='reservada')
@@ -11036,50 +11071,19 @@ def eliminar_cliente(request, cliente_id):
             if not cita.paciente_telefono:
                 cita.paciente_telefono = cliente.telefono
             
-            # Cambiar el estado de "reservada" a "disponible" para que aparezca como disponible en el calendario
-            # O podrías cambiarlo a "cancelada" si prefieres
+            # Cambiar el estado de "reservada" a "disponible"
             cita.estado = 'disponible'
             cita.save()
             citas_actualizadas += 1
         
-        # Preparar mensaje informativo sobre el historial que se preservará
-        historial_info = []
-        if planes_tratamiento > 0:
-            historial_info.append(f'{planes_tratamiento} plan(es) de tratamiento')
-        if odontogramas > 0:
-            historial_info.append(f'{odontogramas} odontograma(s)')
-        if radiografias > 0:
-            historial_info.append(f'{radiografias} radiografía(s)')
-        if documentos > 0:
-            historial_info.append(f'{documentos} documento(s)')
-        if consentimientos > 0:
-            historial_info.append(f'{consentimientos} consentimiento(s)')
-        
-        historial_preservado = ', '.join(historial_info) if historial_info else 'ninguno'
-        
-        # Verificar relaciones antes de eliminar (para debugging)
-        try:
-            citas_count = cliente.citas.count()
-            odontogramas_count = cliente.odontogramas.count()
-            radiografias_count = cliente.radiografias.count() if hasattr(cliente, 'radiografias') else 0
-            
-            # Log para debugging (opcional)
-            if citas_count > 0 or odontogramas_count > 0 or radiografias_count > 0:
-                logger.debug(f"Cliente {cliente_id} tiene: {citas_count} citas, {odontogramas_count} odontogramas, {radiografias_count} radiografias")
-        except Exception as e:
-            logger.error(f"Error al verificar relaciones para cliente {cliente_id}: {str(e)}")
-        
         # Buscar y eliminar el usuario web asociado si existe
-        # Usar transacción atómica para asegurar consistencia
         usuario_web_eliminado = False
         
         try:
-            # PRIMERO: Intentar usar la relación explícita (nueva mejora)
             if cliente.user:
-                logger.info(f"Encontrado User asociado directamente: {cliente.user.username} (ID: {cliente.user.id})")
+                logger.info(f"Encontrado User asociado: {cliente.user.username} (ID: {cliente.user.id})")
                 user_a_eliminar = cliente.user
                 
-                # Usar transacción atómica para la eliminación de User/PerfilCliente
                 with transaction.atomic():
                     # Eliminar PerfilCliente primero
                     try:
@@ -11096,107 +11100,9 @@ def eliminar_cliente(request, cliente_id):
                     # Eliminar User
                     user_a_eliminar.delete()
                     usuario_web_eliminado = True
-                    logger.info(f"✅ Usuario {user_a_eliminar.username} eliminado exitosamente usando relación explícita")
-            else:
-                # FALLBACK: Buscar por email/username (método anterior para compatibilidad)
-                # Ya no extraemos el username de las notas (por seguridad, las credenciales no se guardan ahí)
-                username_cliente = None
-                
-                # Usar transacción atómica para la eliminación de User/PerfilCliente
-                with transaction.atomic():
-                    # Buscar User por email
-                    users_por_email = User.objects.filter(email__iexact=email_cliente)
-                    
-                    # Buscar User por username si lo tenemos
-                    users_por_username = User.objects.none()
-                    if username_cliente:
-                        users_por_username = User.objects.filter(username=username_cliente)
-                    
-                    # Combinar ambas búsquedas (sin duplicados)
-                    users = (users_por_email | users_por_username).distinct()
-                    
-                    if users.exists():
-                        logger.info(f"Encontrados {users.count()} usuario(s) asociado(s) al cliente {cliente_id}")
-                        for user in users:
-                            logger.info(f"Eliminando usuario: {user.username} (email: {user.email})")
-                            
-                            # Eliminar también el perfil de cliente si existe (ANTES de eliminar el User)
-                            # Esto es importante porque si eliminamos el User primero, el CASCADE eliminará el PerfilCliente
-                            # pero queremos asegurarnos de que se elimine correctamente
-                            try:
-                                from django.db import connection
-                                with connection.cursor() as cursor:
-                                    # Verificar si existe PerfilCliente
-                                    cursor.execute(
-                                        "SELECT id FROM cuentas_perfilcliente WHERE user_id = %s",
-                                        [user.id]
-                                    )
-                                    perfil_existe = cursor.fetchone()
-                                    
-                                    if perfil_existe:
-                                        cursor.execute(
-                                            "DELETE FROM cuentas_perfilcliente WHERE user_id = %s",
-                                            [user.id]
-                                        )
-                                        logger.info(f"✅ PerfilCliente eliminado para usuario {user.id}")
-                                    else:
-                                        logger.info(f"ℹ️ No se encontró PerfilCliente para usuario {user.id}")
-                            except Exception as e:
-                                logger.error(f"❌ Error al eliminar PerfilCliente: {e}", exc_info=True)
-                                # Continuar con la eliminación del User aunque falle el PerfilCliente
-                            
-                            # Eliminar el usuario de Django
-                            # Si el PerfilCliente no se eliminó antes, el CASCADE lo eliminará automáticamente
-                            try:
-                                user.delete()
-                                usuario_web_eliminado = True
-                                logger.info(f"✅ Usuario {user.username} (ID: {user.id}) eliminado exitosamente")
-                            except Exception as e:
-                                logger.error(f"❌ Error al eliminar User {user.username}: {e}", exc_info=True)
-                                raise  # Re-lanzar el error para que se capture arriba
-                    else:
-                        logger.info(f"ℹ️ No se encontraron usuarios asociados al cliente {cliente_id} (email: {email_cliente}, username: {username_cliente})")
-                        
-                        # Si no encontramos User por email/username, buscar PerfilCliente directamente por email
-                        # y eliminar tanto el PerfilCliente como su User asociado
-                        try:
-                            from django.db import connection
-                            with connection.cursor() as cursor:
-                                # Buscar PerfilCliente por email
-                                cursor.execute(
-                                    "SELECT user_id FROM cuentas_perfilcliente WHERE email = %s",
-                                    [email_cliente]
-                                )
-                                perfil_result = cursor.fetchone()
-                                
-                                if perfil_result:
-                                    user_id_perfil = perfil_result[0]
-                                    logger.info(f"🔍 Encontrado PerfilCliente con user_id={user_id_perfil} para email {email_cliente}")
-                                    
-                                    # Eliminar PerfilCliente
-                                    cursor.execute(
-                                        "DELETE FROM cuentas_perfilcliente WHERE user_id = %s",
-                                        [user_id_perfil]
-                                    )
-                                    logger.info(f"✅ PerfilCliente eliminado (user_id: {user_id_perfil})")
-                                    
-                                    # Eliminar User
-                                    try:
-                                        user_orphan = User.objects.get(id=user_id_perfil)
-                                        user_orphan.delete()
-                                        usuario_web_eliminado = True
-                                        logger.info(f"✅ Usuario huérfano {user_orphan.username} eliminado")
-                                    except User.DoesNotExist:
-                                        logger.warning(f"⚠️ User {user_id_perfil} no existe, solo se eliminó PerfilCliente")
-                        except Exception as e2:
-                            logger.warning(f"⚠️ No se pudo buscar/eliminar PerfilCliente por email: {e2}")
-                    
+                    logger.info(f"✅ Usuario {user_a_eliminar.username} eliminado exitosamente")
         except Exception as e:
-            # Si hay un error en la transacción, se revierte automáticamente
-            # Si hay un error al eliminar el usuario, continuar con la eliminación del cliente
             logger.error(f"❌ Error al eliminar usuario web: {str(e)}", exc_info=True)
-            import traceback
-            logger.error(f"Traceback completo: {traceback.format_exc()}")
         
         # Registrar en auditoría ANTES de eliminar
         detalles_eliminacion = f'Email: {email_cliente}, RUT: {cliente.rut if cliente.rut else "N/A"}'
@@ -11204,8 +11110,6 @@ def eliminar_cliente(request, cliente_id):
             detalles_eliminacion += f', {citas_actualizadas} cita(s) actualizada(s)'
         if usuario_web_eliminado:
             detalles_eliminacion += ', Usuario web eliminado'
-        if tiene_historial:
-            detalles_eliminacion += f', Historial preservado: {historial_preservado}'
         registrar_auditoria(
             usuario=perfil,
             accion='eliminar',
@@ -11217,9 +11121,7 @@ def eliminar_cliente(request, cliente_id):
             request=request
         )
         
-        # Eliminar el cliente
-        # NOTA: Con los cambios en los modelos (SET_NULL), el historial clínico se preservará
-        # pero quedará sin referencia al cliente (cliente=NULL)
+        # Eliminar el cliente (solo si no tiene datos vinculados)
         cliente.delete()
         
         # Mensaje de confirmación
@@ -11228,8 +11130,6 @@ def eliminar_cliente(request, cliente_id):
             mensaje += f' {citas_actualizadas} cita(s) reservada(s) fueron marcadas como disponibles.'
         if usuario_web_eliminado:
             mensaje += ' Su cuenta de usuario web también fue eliminada.'
-        if tiene_historial:
-            mensaje += f' El historial clínico ha sido preservado ({historial_preservado}) pero quedó sin referencia al cliente.'
         
         return JsonResponse({
             'success': True,

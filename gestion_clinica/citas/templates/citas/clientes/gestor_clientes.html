@@ -2277,56 +2277,10 @@ async function toggleEstadoCliente(clienteId, activar) {
 }
 
 // ========== ELIMINAR CLIENTE ==========
+// FUNCIÓN DESHABILITADA: Los clientes con datos vinculados solo pueden ser desactivados
+// Esta función se mantiene por compatibilidad pero no se usa en la interfaz
 async function eliminarCliente(clienteId, nombreCliente) {
-    // Primera confirmación con advertencia detallada
-    const confirmacion = confirm(
-        `⚠️ ADVERTENCIA: Esta acción es PERMANENTE\n\n` +
-        `¿Estás seguro de que deseas ELIMINAR completamente a "${nombreCliente}"?\n\n` +
-        `Esto eliminará:\n` +
-        `• El registro del cliente en la clínica\n` +
-        `• Su cuenta de usuario web (si existe)\n\n` +
-        `Se preservará (sin referencia al cliente):\n` +
-        `• Historial clínico (planes, odontogramas, radiografías)\n` +
-        `• Documentos y consentimientos informados\n` +
-        `• Citas (quedarán sin cliente asignado)\n\n` +
-        `Esta acción NO se puede deshacer.`
-    );
-    
-    if (!confirmacion) {
-        return;
-    }
-    
-    // Segunda confirmación para estar absolutamente seguro
-    const confirmacionFinal = confirm(
-        `¿REALMENTE deseas eliminar a "${nombreCliente}"?\n\n` +
-        `Esta es tu última oportunidad para cancelar.`
-    );
-    
-    if (!confirmacionFinal) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/trabajadores/clientes/${clienteId}/eliminar/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            alert('✅ ' + data.message);
-            location.reload();
-        } else {
-            alert('❌ Error: ' + data.error);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('❌ Error al eliminar el cliente');
-    }
+    showNotification('warning', 'Los clientes con datos vinculados (tratamientos, radiografías, etc.) solo pueden ser desactivados, no eliminados. Por favor, usa la opción "Desactivar" en su lugar.');
 }
 
 // Sincronizar cliente de web con sistema de gestión
@@ -2498,64 +2452,18 @@ function cerrarModalAccionesCliente() {
 }
 
 // ========== MODALES DE CONFIRMACIÓN ==========
-// Eliminar Cliente
+// Eliminar Cliente - FUNCIONES DESHABILITADAS
+// Los clientes con datos vinculados solo pueden ser desactivados
 function abrirModalConfirmarEliminacion(clienteId, nombreCliente) {
-    document.getElementById('clienteIdParaEliminar').value = clienteId;
-    document.getElementById('clienteNombreParaEliminar').value = nombreCliente;
-    
-    const modal = document.getElementById('modalConfirmarEliminacion');
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    showNotification('warning', 'Los clientes con datos vinculados (tratamientos, radiografías, etc.) solo pueden ser desactivados, no eliminados. Por favor, usa la opción "Desactivar" en su lugar.');
 }
 
 function cerrarModalConfirmarEliminacion() {
-    const modal = document.getElementById('modalConfirmarEliminacion');
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
+    // Función vacía - modal removido
 }
 
 function confirmarEliminarCliente() {
-    const clienteId = document.getElementById('clienteIdParaEliminar').value;
-    const btnConfirmar = document.getElementById('btnConfirmarEliminacion');
-    
-    if (!clienteId) {
-        showNotification('error', 'Error: No se pudo obtener la información del cliente.');
-        return;
-    }
-    
-    if (btnConfirmar) {
-        btnConfirmar.disabled = true;
-        btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
-    }
-    
-    fetch(`/trabajadores/clientes/${clienteId}/eliminar/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('success', data.message || 'Cliente eliminado exitosamente.');
-            cerrarModalConfirmarEliminacion();
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            throw new Error(data.error || 'Error al eliminar el cliente.');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('error', error.message || 'Error al eliminar el cliente.');
-        if (btnConfirmar) {
-            btnConfirmar.disabled = false;
-            btnConfirmar.innerHTML = '<i class="fas fa-trash-alt"></i> Sí, eliminar cliente';
-        }
-    });
+    showNotification('warning', 'Los clientes con datos vinculados solo pueden ser desactivados, no eliminados.');
 }
 
 // Cambiar Estado
@@ -2702,9 +2610,9 @@ async function toggleEstadoCliente(clienteId, activar) {
     abrirModalConfirmarEstado(clienteId, activar, nombre);
 }
 
-// Reemplazar eliminarCliente
+// Reemplazar eliminarCliente - DESHABILITADO
 async function eliminarCliente(clienteId, nombreCliente) {
-    abrirModalConfirmarEliminacion(clienteId, nombreCliente);
+    showNotification('warning', 'Los clientes con datos vinculados solo pueden ser desactivados, no eliminados.');
 }
 
 // Reemplazar sincronizarClienteWeb
@@ -2952,18 +2860,7 @@ document.addEventListener('keydown', function(e) {
                         <i class="fas fa-chevron-right accion-arrow"></i>
                     </button>
                     
-                    <div style="height: 1px; background: #e5e7eb; margin: 12px 0;"></div>
-                    
-                    <button class="accion-item accion-item-danger" onclick="cerrarModalAccionesCliente(); abrirModalConfirmarEliminacion(window.currentClienteId, window.currentClienteNombre);">
-                        <div class="accion-icon" style="background: #ef4444;">
-                            <i class="fas fa-trash-alt"></i>
-                        </div>
-                        <div class="accion-content">
-                            <div class="accion-title">Eliminar Cliente</div>
-                            <div class="accion-desc">Eliminar permanentemente del sistema</div>
-                        </div>
-                        <i class="fas fa-chevron-right accion-arrow"></i>
-                    </button>
+                    <!-- Botón de eliminar removido: Los clientes con datos vinculados solo pueden ser desactivados -->
                 </div>
             </div>
         </div>
