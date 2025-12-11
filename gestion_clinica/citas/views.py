@@ -2981,27 +2981,27 @@ def gestor_clientes(request):
             )
         
         # Solo incluir los que NO tienen Cliente asociado (por email)
-        for perfil in perfiles_web:
-            if perfil.email and perfil.email not in emails_existentes:
+        for perfil_cliente_web in perfiles_web:
+            if perfil_cliente_web.email and perfil_cliente_web.email not in emails_existentes:
                 # Crear un objeto similar a Cliente para la vista
                 cliente_web = type('ClienteWeb', (), {
-                    'id': f'web_{perfil.id}',
-                    'nombre_completo': perfil.nombre_completo,
-                    'email': perfil.email,
-                    'telefono': perfil.telefono,
-                    'rut': perfil.rut or '',
-                    'fecha_nacimiento': perfil.fecha_nacimiento,
-                    'alergias': perfil.alergias or '',
-                    'fecha_registro': perfil.user.date_joined if perfil.user else None,
-                    'activo': perfil.user.is_active if perfil.user else True,
-                    'tiene_alergias': perfil.tiene_alergias,
-                    'edad': perfil.edad,
+                    'id': f'web_{perfil_cliente_web.id}',
+                    'nombre_completo': perfil_cliente_web.nombre_completo,
+                    'email': perfil_cliente_web.email,
+                    'telefono': perfil_cliente_web.telefono,
+                    'rut': perfil_cliente_web.rut or '',
+                    'fecha_nacimiento': perfil_cliente_web.fecha_nacimiento,
+                    'alergias': perfil_cliente_web.alergias or '',
+                    'fecha_registro': perfil_cliente_web.user.date_joined if perfil_cliente_web.user else None,
+                    'activo': perfil_cliente_web.user.is_active if perfil_cliente_web.user else True,
+                    'tiene_alergias': perfil_cliente_web.tiene_alergias,
+                    'edad': perfil_cliente_web.edad,
                     'total_citas': 0,  # Se puede calcular después si es necesario
                     'total_odontogramas': 0,
                     'total_radiografias': 0,
                     'es_de_web': True,  # Marca para identificar que viene de cliente_web
-                    'user_id': perfil.user.id if perfil.user else None,
-                    'username': perfil.user.username if perfil.user else None,
+                    'user_id': perfil_cliente_web.user.id if perfil_cliente_web.user else None,
+                    'username': perfil_cliente_web.user.username if perfil_cliente_web.user else None,
                 })()
                 clientes_web.append(cliente_web)
     except ImportError:
