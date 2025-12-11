@@ -1872,56 +1872,33 @@ function cerrarModalAccionesPersonal() {
 }
 
 // ========== MODALES DE CONFIRMACIÓN ==========
-// Eliminar Personal
+// Eliminar Personal - FUNCIONES DESHABILITADAS
+// El personal con datos vinculados solo puede ser desactivado
 function abrirModalConfirmarEliminacionPersonal(personalId, nombreCompleto) {
-    document.getElementById('personalIdParaEliminar').value = personalId;
-    document.getElementById('personalNombreParaEliminar').textContent = nombreCompleto;
-    
-    const modal = document.getElementById('modalConfirmarEliminacionPersonal');
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    showNotification('warning', 'El personal con datos vinculados (tratamientos, radiografías, etc.) solo puede ser desactivado, no eliminado. Por favor, usa la opción "Desactivar" en su lugar.');
 }
 
 function cerrarModalConfirmarEliminacionPersonal() {
-    const modal = document.getElementById('modalConfirmarEliminacionPersonal');
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
+    // Función vacía - modal removido
 }
 
 function confirmarEliminarPersonal() {
-    const personalId = document.getElementById('personalIdParaEliminar').value;
-    const btnConfirmar = document.getElementById('btnConfirmarEliminacionPersonal');
-    
-    if (!personalId) {
-        showNotification('error', 'Error: No se pudo obtener la información del personal.');
-        return;
-    }
-    
-    if (btnConfirmar) {
-        btnConfirmar.disabled = true;
-        btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
-    }
-    
-        // Crear formulario para enviar POST
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/trabajadores/eliminar_personal/${personalId}/`;
-        
-        // Agregar token CSRF
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = csrfToken;
-        form.appendChild(csrfInput);
-        
-        // Enviar formulario
-        document.body.appendChild(form);
-        form.submit();
-    }
+    showNotification('warning', 'El personal con datos vinculados solo puede ser desactivado, no eliminado.');
+}
 
 // Cambiar Estado Personal
 function abrirModalConfirmarEstadoPersonal(personalId, activar, nombreCompleto) {
+    // PROTECCIÓN: No permitir auto-desactivación
+    if (!activar) {
+        // Verificar si el usuario está intentando desactivarse a sí mismo
+        const currentPerfilId = {% if perfil %}{{ perfil.id }}{% else %}null{% endif %};
+        
+        if (currentPerfilId && parseInt(personalId) === parseInt(currentPerfilId)) {
+            showNotification('error', 'NO puedes desactivar tu propia cuenta. Por favor, solicita a otro administrador que realice esta acción.');
+            return;
+        }
+    }
+    
     document.getElementById('personalIdParaEstado').value = personalId;
     document.getElementById('personalAccionEstado').value = activar ? 'activar' : 'desactivar';
     document.getElementById('nombrePersonalEstado').textContent = nombreCompleto;
@@ -1992,9 +1969,9 @@ function confirmarCambiarEstadoPersonal() {
     });
 }
 
-// Función legacy para eliminar (mantener compatibilidad)
+// Función legacy para eliminar - DESHABILITADA
 function eliminarPersonal(personalId, nombreCompleto) {
-    abrirModalConfirmarEliminacionPersonal(personalId, nombreCompleto);
+    showNotification('warning', 'El personal con datos vinculados solo puede ser desactivado, no eliminado.');
 }
 </script>
 
@@ -2129,18 +2106,7 @@ function eliminarPersonal(personalId, nombreCompleto) {
                         <i class="fas fa-chevron-right accion-arrow"></i>
                     </button>
                     
-                    <div style="height: 1px; background: #e5e7eb; margin: 12px 0;"></div>
-                    
-                    <button class="accion-item accion-item-danger" onclick="cerrarModalAccionesPersonal(); abrirModalConfirmarEliminacionPersonal(window.currentPersonalId, window.currentPersonalNombre);">
-                        <div class="accion-icon" style="background: #ef4444;">
-                            <i class="fas fa-trash-alt"></i>
-                        </div>
-                        <div class="accion-content">
-                            <div class="accion-title">Eliminar Personal</div>
-                            <div class="accion-desc">Eliminar permanentemente del sistema</div>
-                        </div>
-                        <i class="fas fa-chevron-right accion-arrow"></i>
-                    </button>
+                    <!-- Botón de eliminar removido: El personal con datos vinculados solo puede ser desactivado -->
                 </div>
             </div>
         </div>

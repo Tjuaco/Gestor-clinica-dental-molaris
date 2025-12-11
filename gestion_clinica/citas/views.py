@@ -4234,6 +4234,11 @@ def editar_personal(request, personal_id):
 # Eliminar personal
 @login_required
 def eliminar_personal(request, personal_id):
+    """
+    Vista para eliminar personal del sistema
+    NO PERMITE eliminar personal con datos vinculados o historial
+    El personal solo puede ser desactivado para preservar la integridad de los datos
+    """
     try:
         perfil_admin = Perfil.objects.get(user=request.user)
         if not perfil_admin.es_administrativo():
@@ -4253,7 +4258,6 @@ def eliminar_personal(request, personal_id):
         
         # PROTECCIÓN 2: Verificar que siempre haya al menos un administrador activo
         if personal.rol == 'administrativo' and personal.activo:
-            # Contar cuántos administradores activos quedarían después de eliminar este
             administradores_activos = Perfil.objects.filter(
                 rol='administrativo',
                 activo=True
@@ -4267,6 +4271,45 @@ def eliminar_personal(request, personal_id):
                 )
                 return redirect('gestor_personal')
         
+        # PROTECCIÓN 3: Verificar si tiene datos vinculados (citas, odontogramas, radiografías, planes de tratamiento, etc.)
+        from historial_clinico.models import Odontograma, Radiografia, PlanTratamiento
+        from citas.models import Cita
+        
+        odontogramas_count = Odontograma.objects.filter(dentista=personal).count() if personal.rol == 'dentista' else 0
+        radiografias_count = Radiografia.objects.filter(dentista=personal).count() if personal.rol == 'dentista' else 0
+        planes_count = PlanTratamiento.objects.filter(dentista=personal).count() if personal.rol == 'dentista' else 0
+        citas_count = Cita.objects.filter(dentista=personal).count() if personal.rol == 'dentista' else 0
+        
+        tiene_datos_vinculados = (
+            odontogramas_count > 0 or 
+            radiografias_count > 0 or 
+            planes_count > 0 or 
+            citas_count > 0
+        )
+        
+        if tiene_datos_vinculados:
+            datos_vinculados = []
+            if odontogramas_count > 0:
+                datos_vinculados.append(f'{odontogramas_count} odontograma(s)')
+            if radiografias_count > 0:
+                datos_vinculados.append(f'{radiografias_count} radiografía(s)')
+            if planes_count > 0:
+                datos_vinculados.append(f'{planes_count} plan(es) de tratamiento')
+            if citas_count > 0:
+                datos_vinculados.append(f'{citas_count} cita(s)')
+            
+            mensaje_datos = ', '.join(datos_vinculados)
+            
+            messages.error(
+                request,
+                f'No se puede eliminar a "{nombre_completo}" porque tiene datos vinculados en el sistema: {mensaje_datos}. '
+                f'Para proteger la integridad de los datos históricos, el personal con información clínica solo puede ser desactivado. '
+                f'Por favor, usa la opción "Desactivar" en lugar de "Eliminar".'
+            )
+            return redirect('gestor_personal')
+        
+        # Si llegamos aquí, el personal NO tiene datos vinculados y puede ser eliminado
+        # (Solo personal sin historial puede ser eliminado - caso muy raro)
         try:
             # Eliminar foto si existe
             if personal.foto:
@@ -4332,6 +4375,14 @@ def toggle_estado_personal(request, personal_id):
         
         personal = Perfil.objects.get(id=personal_id)
         nuevo_estado = not personal.activo
+        
+        # PROTECCIÓN: No permitir auto-desactivación
+        if personal.id == perfil_admin.id and nuevo_estado == False:
+            return JsonResponse({
+                'success': False,
+                'error': 'NO puedes desactivar tu propia cuenta. Por favor, solicita a otro administrador que realice esta acción.'
+            }, status=400)
+        
         personal.activo = nuevo_estado
         personal.save()
         
